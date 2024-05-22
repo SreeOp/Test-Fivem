@@ -14,7 +14,7 @@ module.exports = {
       const ping = sentMessage.createdTimestamp - message.createdTimestamp;
 
       const updatedPingEmbed = new EmbedBuilder()
-        .setColor('#0099ff')
+        .setColor('#ff7900')
         .setTitle('Payment Method')
         .setDescription(`Google Pay`)
         .setImage(`https://cdn.discordapp.com/attachments/1168317399892774942/1227660104854147285/GooglePay_QR_1.png?ex=664ec951&is=664d77d1&hm=38fa1ea8b4a1c65a84b73c4c71f880646fdff24af2db89b02bd72431dbeae7b3&`)
