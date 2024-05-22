@@ -17,7 +17,7 @@ module.exports = {
         .setColor('#0099ff')
         .setTitle('Payment Method')
         .setDescription(`Google Pay`)
-        .setImage(`https://cdn.discordapp.com/attachments/1056903195961610275/1242682120141275176/standard_3.gif?ex=664eb969&is=664d67e9&hm=63d30f8533214bdab9e3660a6e4ee7a5a4f81db3cc3c796fe4b84d671c11c8be&`)
+        .setImage(`https://cdn.discordapp.com/attachments/1168317399892774942/1227660104854147285/GooglePay_QR_1.png?ex=664ec951&is=664d77d1&hm=38fa1ea8b4a1c65a84b73c4c71f880646fdff24af2db89b02bd72431dbeae7b3&`)
         .setTimestamp();
 
       sentMessage.edit({ embeds: [updatedPingEmbed] });
