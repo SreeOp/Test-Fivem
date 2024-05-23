@@ -2,8 +2,14 @@ module.exports = {
   name: 'clear',
   description: 'Clear a specified number of messages in the channel',
   async execute(message, args) {
+    // Check if the command sender is a guild member
+    if (!message.member) {
+      message.reply('This command can only be used in a server.');
+      return;
+    }
+
     // Check if the user has permission to manage messages
-    if (!message.member.hasPermission('MANAGE_MESSAGES')) {
+    if (!message.member.permissions.has('MANAGE_MESSAGES')) {
       message.reply('You do not have permission to use this command.');
       return;
     }
