@@ -48,35 +48,33 @@ module.exports = {
                 required: true,
               },
               {
-                type: 4, // Button
-                style: ButtonStyle.Primary,
-                customId: 'submitApplication',
-                label: 'Submit Application',
+                type: 2, // TextInput
+                customId: 'reason',
+                placeholder: 'Reason for joining',
+                min: 1,
+                max: 100,
+                required: true,
               },
-            ],
-          },
-        ],
-      });
-
-      const filter = (i) => i.customId === 'username' || i.customId === 'age' || i.customId === 'submitApplication';
-      const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
-
-      const applicationDetails = {};
-
-      collector.on('collect', async (i) => {
-        if (i.customId === 'submitApplication') {
-          if (!applicationDetails.username || !applicationDetails.age) {
-            await interaction.followUp({ content: 'Please fill in all fields.', ephemeral: true });
-            return;
-          }
-
-          // Process application submission here
-          // Example: Send to a submission channel and notify the user
-          await interaction.followUp({ content: 'Your application has been submitted!', ephemeral: true });
-        } else {
-          applicationDetails[i.customId] = i.values[0];
-        }
-      });
-    }
-  }
-};
+              {
+                type: 2, // TextInput
+                customId: 'discordId',
+                placeholder: 'Discord ID',
+                min: 1,
+                max: 32,
+                required: true,
+              },
+              {
+                type: 2, // TextInput
+                customId: 'steamId',
+                placeholder: 'Steam ID',
+                min: 1,
+                max: 32,
+                required: true,
+              },
+              {
+                type: 2, // TextInput
+                customId: 'steamId',
+                required: true,
+              }
+              {
+                Icon: Define Status Bar Provides The Marketplace Shopify App We Creative Market
