@@ -1,40 +1,43 @@
 const Discord = require('discord.js');
-const client = new Discord.Client();
-const { token, guildId, applicationChannelId, reviewChannelId } = require('./config.json'); // Make sure to create a config.json file
+const client = new Discord.Client({
+    intents: [
+        Discord.Intents.FLAGS.GUILDS, // Required for guilds
+        Discord.Intents.FLAGS.GUILD_MESSAGES, // Required for messages
+        Discord.Intents.FLAGS.DIRECT_MESSAGES, // Required for DMs
+        Discord.Intents.FLAGS.MESSAGE_REACTIONS // Required to handle button interactions
+    ]
+});
+const { token, guildId, applicationChannelId, reviewChannelId } = require('./config.json');
 
 client.once('ready', () => {
     console.log('Bot is ready!');
 });
 
-client.on('message', async message => {
+client.on('messageCreate', async message => {
     if (message.content.toLowerCase() === '!apply') {
-        // Replace with your application embed
         const embed = new Discord.MessageEmbed()
             .setTitle('Whitelist Application')
             .setDescription('Click the button below to apply for whitelist.')
             .setColor('#00ff00');
 
         const applicationChannel = client.channels.cache.get(applicationChannelId);
-        if (!applicationChannel || applicationChannel.type !== 'text') return message.channel.send('Application channel not found.');
+        if (!applicationChannel || applicationChannel.type !== 'GUILD_TEXT') return message.channel.send('Application channel not found.');
 
         const sentMessage = await applicationChannel.send({ embeds: [embed], components: [getApplyButton()] });
 
-        // Listen for interaction
         client.on('interactionCreate', async interaction => {
             if (!interaction.isButton()) return;
 
             if (interaction.customId === 'apply') {
                 const user = interaction.user;
-                // DM the user about their application
                 try {
                     await user.send('Your application has been submitted successfully.');
                 } catch (error) {
                     console.error('Could not send DM to user.');
                 }
-                
-                // Move application to review channel
+
                 const reviewChannel = client.channels.cache.get(reviewChannelId);
-                if (reviewChannel && reviewChannel.type === 'text') {
+                if (reviewChannel && reviewChannel.type === 'GUILD_TEXT') {
                     const reviewEmbed = new Discord.MessageEmbed()
                         .setTitle('New Whitelist Application')
                         .setDescription('Review and decide on this application.')
@@ -42,7 +45,7 @@ client.on('message', async message => {
                         .addField('Applicant', user.tag);
 
                     const reviewMessage = await reviewChannel.send({ embeds: [reviewEmbed], components: getReviewButtons(user) });
-                    sentMessage.delete(); // Delete the original application message
+                    sentMessage.delete();
                 }
             }
         });
