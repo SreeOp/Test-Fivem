@@ -1,7 +1,12 @@
 require('dotenv').config(); // Load environment variables from .env file
 
-const { Client } = require('discord.js');
-const client = new Client();
+const { Client, Intents } = require('discord.js');
+const client = new Client({ 
+    intents: [
+        Intents.FLAGS.GUILDS,           // Enable the GUILDS intent
+        Intents.FLAGS.GUILD_MESSAGES    // Enable the GUILD_MESSAGES intent
+    ]
+});
 require('discord-buttons')(client);
 
 // Import functions
