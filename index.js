@@ -1,36 +1,22 @@
-require('dotenv').config();
-const fs = require('fs');
-const { Client, GatewayIntentBits, Partials } = require('discord.js');
+require('dotenv').config(); // Load environment variables from .env file
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMessageReactions,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.DirectMessages,
-  ],
-  partials: [Partials.Channel], // Required to receive DMs
+const { Client } = require('discord.js');
+const client = new Client();
+require('discord-buttons')(client);
+
+// Import functions
+const applyFunction = require('./functions/apply');
+
+client.once('ready', () => {
+    console.log('Bot is online!');
 });
 
-client.once('ready', async () => {
-  console.log(`Logged in as ${client.user.tag}`);
-  
-  const { sendApplicationEmbed } = require('./functions/apply');
-  await sendApplicationEmbed(client);
-});
-
-client.on('interactionCreate', async interaction => {
-  if (interaction.isButton()) {
-    if (interaction.customId === 'applyButton') {
-      const { handleApplicationButton } = require('./functions/apply');
-      await handleApplicationButton(interaction);
-    } else if (interaction.customId === 'acceptButton' || interaction.customId === 'rejectButton' || interaction.customId === 'pendingButton') {
-      const { handleApplicationDecision } = require('./functions/handleApplication');
-      await handleApplicationDecision(interaction);
+// Event listener for button clicks
+client.on('clickButton', async (button) => {
+    if (button.id === 'apply_button') {
+        await applyFunction.handleApply(client, button);
     }
-  }
 });
 
+// Login using environment variable
 client.login(process.env.DISCORD_TOKEN);
