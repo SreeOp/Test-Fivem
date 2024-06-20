@@ -71,10 +71,36 @@ module.exports = {
                 max: 32,
                 required: true,
               },
+              // Add more TextInput components as needed
               {
                 type: 2, // TextInput
                 customId: 'steamId',
-                required: true,
-              }
-              {
-                Icon: Define Status Bar Provides The Marketplace Shopify App We Creative Market
+                required: true, // Ensure each component has required set correctly
+              },
+            ],
+          },
+        ],
+      });
+
+      const filter = (i) => i.customId === 'username' || i.customId === 'age' || i.customId === 'reason' || i.customId === 'discordId' || i.customId === 'steamId';
+      const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
+
+      const applicationDetails = {};
+
+      collector.on('collect', async (i) => {
+        if (i.customId === 'submitApplication') {
+          if (!applicationDetails.username || !applicationDetails.age || !applicationDetails.reason || !applicationDetails.discordId || !applicationDetails.steamId) {
+            await interaction.followUp({ content: 'Please fill in all fields.', ephemeral: true });
+            return;
+          }
+
+          // Process application submission here
+          // Example: Send to a submission channel and notify the user
+          await interaction.followUp({ content: 'Your application has been submitted!', ephemeral: true });
+        } else {
+          applicationDetails[i.customId] = i.values[0];
+        }
+      });
+    }
+  }
+};
