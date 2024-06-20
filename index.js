@@ -1,88 +1,83 @@
-const { Client, GatewayIntentBits, ActivityType, MessageEmbed } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-const express = require('express');
-require('dotenv').config();
-const { handleWhitelistApplication } = require('./functions/whitelist');
-
-const client = new Client({
-  intents: Object.values(GatewayIntentBits),
-});
-
-const prefix = '!';
-
-client.commands = new Map();
-
-const commandFiles = fs.readdirSync('./commands').filter((file) => file.endsWith('.js'));
-
-for (const file of commandFiles) {
-  const command = require(`./commands/${file}`);
-  client.commands.set(command.name, command);
-}
-
-client.on('messageCreate', (message) => {
-  if (!message.content.startsWith(prefix) || message.author.bot) return;
-
-  const args = message.content.slice(prefix.length).trim().split(/ +/);
-  const commandName = args.shift().toLowerCase();
-
-  const command = client.commands.get(commandName);
-
-  if (command) {
-    try {
-      command.execute(message, args);
-    } catch (error) {
-      console.error(error);
-      message.reply('There was an error trying to execute that command!');
-    }
-  }
-});
-
-const app = express();
-const port = 3000;
-app.get('/', (req, res) => {
-  const indexPath = path.join(__dirname, 'index.html');
-  res.sendFile(indexPath);
-});
-app.listen(port, () => {
-  console.log(`🔗 Listening to GlaceYT : http://localhost:${port}`);
-});
-
-async function login() {
-  try {
-    await client.login(process.env.TOKEN);
-    console.log('\x1b[32m%s\x1b[0m', '|    🍔 Bot logged in successfully!');
-    console.log('\x1b[36m%s\x1b[0m', '|    🚀 Commands Loaded successfully!');
-    console.log('\x1b[32m%s\x1b[0m', `|    🌼 Logged in as ${client.user.username}`);
-    console.log('\x1b[36m%s\x1b[0m', `|    🏡 Bot is in ${client.guilds.cache.size} servers`);
-  } catch (error) {
-    console.error('\x1b[31m%s\x1b[0m', '❌ Failed to log in:', error);
-    console.log('\x1b[31m%s\x1b[0m', '❌ Client Not Login, Restarting Process...');
-    process.kill(1);
-  }
-}
+const Discord = require('discord.js');
+const client = new Discord.Client();
+const { token, guildId, applicationChannelId, reviewChannelId } = require('./config.json'); // Make sure to create a config.json file
 
 client.once('ready', () => {
-  setTimeout(() => {
-    console.log('\x1b[32m%s\x1b[0m', `|    🎯 Activity sucessfully set!`);
-    client.user.setPresence({
-      activities: [{ name: `Watching You !`, type: ActivityType.Custom }],
-      status: 'dnd',
-    });
-  }, 2000);
+    console.log('Bot is ready!');
 });
 
-client.on('messageCreate', (message) => {
-  handleWhitelistApplication(client, message);
+client.on('message', async message => {
+    if (message.content.toLowerCase() === '!apply') {
+        // Replace with your application embed
+        const embed = new Discord.MessageEmbed()
+            .setTitle('Whitelist Application')
+            .setDescription('Click the button below to apply for whitelist.')
+            .setColor('#00ff00');
+
+        const applicationChannel = client.channels.cache.get(applicationChannelId);
+        if (!applicationChannel || applicationChannel.type !== 'text') return message.channel.send('Application channel not found.');
+
+        const sentMessage = await applicationChannel.send({ embeds: [embed], components: [getApplyButton()] });
+
+        // Listen for interaction
+        client.on('interactionCreate', async interaction => {
+            if (!interaction.isButton()) return;
+
+            if (interaction.customId === 'apply') {
+                const user = interaction.user;
+                // DM the user about their application
+                try {
+                    await user.send('Your application has been submitted successfully.');
+                } catch (error) {
+                    console.error('Could not send DM to user.');
+                }
+                
+                // Move application to review channel
+                const reviewChannel = client.channels.cache.get(reviewChannelId);
+                if (reviewChannel && reviewChannel.type === 'text') {
+                    const reviewEmbed = new Discord.MessageEmbed()
+                        .setTitle('New Whitelist Application')
+                        .setDescription('Review and decide on this application.')
+                        .setColor('#ffcc00')
+                        .addField('Applicant', user.tag);
+
+                    const reviewMessage = await reviewChannel.send({ embeds: [reviewEmbed], components: getReviewButtons(user) });
+                    sentMessage.delete(); // Delete the original application message
+                }
+            }
+        });
+    }
 });
 
-login();
+function getApplyButton() {
+    return new Discord.MessageActionRow()
+        .addComponents(
+            new Discord.MessageButton()
+                .setCustomId('apply')
+                .setLabel('Apply')
+                .setStyle('SUCCESS')
+        );
+}
 
-setInterval(() => {
-  if (!client || !client.user) {
-    console.log('\x1b[31m%s\x1b[0m', '❌ Client Not Logged in, Restarting Process...');
-    process.kill(1);
-  }
-}, 15000);
+function getReviewButtons(user) {
+    return new Discord.MessageActionRow()
+        .addComponents(
+            new Discord.MessageButton()
+                .setCustomId('accept')
+                .setLabel('Accept')
+                .setStyle('SUCCESS')
+                .setEmoji('✅'),
+            new Discord.MessageButton()
+                .setCustomId('reject')
+                .setLabel('Reject')
+                .setStyle('DANGER')
+                .setEmoji('❌'),
+            new Discord.MessageButton()
+                .setCustomId('pending')
+                .setLabel('Pending')
+                .setStyle('SECONDARY')
+                .setEmoji('⌛')
+        );
+}
 
-module.exports = client;
+client.login(token);
