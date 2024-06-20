@@ -1,5 +1,5 @@
 const { Client, Intents, MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
-const { token, guildId, applicationChannelId, reviewChannelId } = require('./config.json');
+const { token, guildId, applicationChannelId, reviewChannelId };
 
 client.once('ready', () => {
     console.log('Bot is ready!');
