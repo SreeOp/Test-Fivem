@@ -1,12 +1,5 @@
-const Discord = require('discord.js');
-const client = new Discord.Client({
-    intents: [
-        Discord.Intents.FLAGS.GUILDS, // Required for guilds
-        Discord.Intents.FLAGS.GUILD_MESSAGES, // Required for messages
-        Discord.Intents.FLAGS.DIRECT_MESSAGES, // Required for DMs
-        Discord.Intents.FLAGS.MESSAGE_REACTIONS // Required to handle button interactions
-    ]
-});
+const { Client, Intents, MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
+const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.DIRECT_MESSAGES] });
 const { token, guildId, applicationChannelId, reviewChannelId } = require('./config.json');
 
 client.once('ready', () => {
@@ -15,7 +8,7 @@ client.once('ready', () => {
 
 client.on('messageCreate', async message => {
     if (message.content.toLowerCase() === '!apply') {
-        const embed = new Discord.MessageEmbed()
+        const embed = new MessageEmbed()
             .setTitle('Whitelist Application')
             .setDescription('Click the button below to apply for whitelist.')
             .setColor('#00ff00');
@@ -38,7 +31,7 @@ client.on('messageCreate', async message => {
 
                 const reviewChannel = client.channels.cache.get(reviewChannelId);
                 if (reviewChannel && reviewChannel.type === 'GUILD_TEXT') {
-                    const reviewEmbed = new Discord.MessageEmbed()
+                    const reviewEmbed = new MessageEmbed()
                         .setTitle('New Whitelist Application')
                         .setDescription('Review and decide on this application.')
                         .setColor('#ffcc00')
@@ -53,9 +46,9 @@ client.on('messageCreate', async message => {
 });
 
 function getApplyButton() {
-    return new Discord.MessageActionRow()
+    return new MessageActionRow()
         .addComponents(
-            new Discord.MessageButton()
+            new MessageButton()
                 .setCustomId('apply')
                 .setLabel('Apply')
                 .setStyle('SUCCESS')
@@ -63,19 +56,19 @@ function getApplyButton() {
 }
 
 function getReviewButtons(user) {
-    return new Discord.MessageActionRow()
+    return new MessageActionRow()
         .addComponents(
-            new Discord.MessageButton()
+            new MessageButton()
                 .setCustomId('accept')
                 .setLabel('Accept')
                 .setStyle('SUCCESS')
                 .setEmoji('✅'),
-            new Discord.MessageButton()
+            new MessageButton()
                 .setCustomId('reject')
                 .setLabel('Reject')
                 .setStyle('DANGER')
                 .setEmoji('❌'),
-            new Discord.MessageButton()
+            new MessageButton()
                 .setCustomId('pending')
                 .setLabel('Pending')
                 .setStyle('SECONDARY')
