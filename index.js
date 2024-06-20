@@ -26,7 +26,7 @@ client.on('interactionCreate', async interaction => {
     if (interaction.customId === 'applyButton') {
       const { handleApplicationButton } = require('./functions/apply');
       await handleApplicationButton(interaction);
-    } else if (interaction.customId === 'acceptButton' || interaction.customId === 'rejectButton') {
+    } else if (interaction.customId === 'acceptButton' || interaction.customId === 'rejectButton' || interaction.customId === 'pendingButton') {
       const { handleApplicationDecision } = require('./functions/handleApplication');
       await handleApplicationDecision(interaction);
     }
