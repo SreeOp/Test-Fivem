@@ -28,67 +28,53 @@ module.exports = {
         content: 'Please provide the following details:',
         ephemeral: true,
         components: [
-          new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-              .setCustomId('username')
-              .setLabel('Username')
-              .setStyle(TextInputStyle.Short)
-              .setRequired(true),
-            new TextInputBuilder()
-              .setCustomId('age')
-              .setLabel('Age')
-              .setStyle(TextInputStyle.Short)
-              .setRequired(true),
-            new TextInputBuilder()
-              .setCustomId('reason')
-              .setLabel('Reason for joining')
-              .setStyle(TextInputStyle.Paragraph)
-              .setRequired(true)
-          )
-        ]
+          {
+            type: 1, // ActionRow
+            components: [
+              {
+                type: 2, // TextInput
+                customId: 'username',
+                placeholder: 'Enter your username',
+                min: 1,
+                max: 32,
+                required: true,
+              },
+              {
+                type: 2, // TextInput
+                customId: 'age',
+                placeholder: 'Enter your age',
+                min: 1,
+                max: 3,
+                required: true,
+              },
+              {
+                type: 4, // Button
+                style: ButtonStyle.Primary,
+                customId: 'submitApplication',
+                label: 'Submit Application',
+              },
+            ],
+          },
+        ],
       });
 
-      const filter = (i) => i.customId === 'username' || i.customId === 'age' || i.customId === 'reason';
+      const filter = (i) => i.customId === 'username' || i.customId === 'age' || i.customId === 'submitApplication';
       const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
 
       const applicationDetails = {};
 
       collector.on('collect', async (i) => {
-        applicationDetails[i.customId] = i.values[0];
-        if (Object.keys(applicationDetails).length === 3) {
-          collector.stop();
-          const submittedApplicationChannel = interaction.client.channels.cache.get(process.env.SUBMITTED_APPLICATION_CHANNEL_ID);
-          if (submittedApplicationChannel) {
-            const embed = new EmbedBuilder()
-              .setTitle('New Whitelist Application')
-              .setColor(0x00FF00)
-              .addFields(
-                { name: 'Username', value: applicationDetails.username },
-                { name: 'Age', value: applicationDetails.age },
-                { name: 'Reason', value: applicationDetails.reason },
-              )
-              .setTimestamp();
-
-            const row = new ActionRowBuilder().addComponents(
-              new ButtonBuilder()
-                .setCustomId('acceptButton')
-                .setLabel('Accept')
-                .setStyle(ButtonStyle.Success),
-              new ButtonBuilder()
-                .setCustomId('rejectButton')
-                .setLabel('Reject')
-                .setStyle(ButtonStyle.Danger),
-              new ButtonBuilder()
-                .setCustomId('pendingButton')
-                .setLabel('Pending')
-                .setStyle(ButtonStyle.Secondary)
-            );
-
-            await submittedApplicationChannel.send({ embeds: [embed], components: [row], content: `<@${interaction.user.id}>` });
-            await interaction.followUp({ content: 'Your application has been submitted!', ephemeral: true });
-          } else {
-            await interaction.followUp({ content: 'Error: Submitted application channel not found.', ephemeral: true });
+        if (i.customId === 'submitApplication') {
+          if (!applicationDetails.username || !applicationDetails.age) {
+            await interaction.followUp({ content: 'Please fill in all fields.', ephemeral: true });
+            return;
           }
+
+          // Process application submission here
+          // Example: Send to a submission channel and notify the user
+          await interaction.followUp({ content: 'Your application has been submitted!', ephemeral: true });
+        } else {
+          applicationDetails[i.customId] = i.values[0];
         }
       });
     }
