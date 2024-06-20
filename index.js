@@ -1,6 +1,6 @@
 require('dotenv').config();
 const fs = require('fs');
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, Partials } = require('discord.js');
 
 const client = new Client({
   intents: [
@@ -8,15 +8,13 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMessageReactions,
-    GatewayIntentBits.MessageReactionAdd,
+    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.DirectMessages,
-    GatewayIntentBits.MessageContent,
   ],
+  partials: [Partials.Channel], // Required to receive DMs
 });
 
-const functionFiles = fs.readdirSync('./functions').filter(file => file.endsWith('.js'));
-
-client.on('ready', async () => {
+client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
   
   const { sendApplicationEmbed } = require('./functions/apply');
