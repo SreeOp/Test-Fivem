@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, TextInputBuilder, TextInputStyle } = require('discord.js');
 
 module.exports = {
   sendApplicationEmbed: async (client) => {
@@ -77,7 +77,11 @@ module.exports = {
               new ButtonBuilder()
                 .setCustomId('rejectButton')
                 .setLabel('Reject')
-                .setStyle(ButtonStyle.Danger)
+                .setStyle(ButtonStyle.Danger),
+              new ButtonBuilder()
+                .setCustomId('pendingButton')
+                .setLabel('Pending')
+                .setStyle(ButtonStyle.Secondary)
             );
 
             await submittedApplicationChannel.send({ embeds: [embed], components: [row], content: `<@${interaction.user.id}>` });
