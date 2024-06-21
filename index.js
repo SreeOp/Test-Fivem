@@ -30,7 +30,7 @@ client.on('interactionCreate', async (interaction) => {
 client.login(TOKEN).then(() => {
     console.log('Logged in to Discord');
     // Replace 'CHANNEL_ID' with the ID of the channel where you want to send the application message
-    sendApplicationMessage(client, '1253323014003757189);
+    sendApplicationMessage(client, '1253323014003757189');
 }).catch((error) => {
     console.error('Error logging in to Discord:', error);
 });
