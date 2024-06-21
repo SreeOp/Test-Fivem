@@ -24,7 +24,9 @@ const functionFiles = fs.readdirSync(functionsPath).filter(file => file.endsWith
 for (const file of functionFiles) {
     const filePath = path.join(functionsPath, file);
     const func = require(filePath);
-    func(client);
+    if (typeof func === 'function') {
+        func(client);
+    }
 }
 
 client.once('ready', () => {
