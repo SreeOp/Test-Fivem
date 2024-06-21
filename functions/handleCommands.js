@@ -1,19 +1,16 @@
 module.exports = (client) => {
-    client.on('messageCreate', async (message) => {
-        if (!message.content.startsWith('!') || message.author.bot) return;
+    client.on('interactionCreate', async (interaction) => {
+        if (!interaction.isCommand()) return;
 
-        const args = message.content.slice(1).trim().split(/ +/);
-        const commandName = args.shift().toLowerCase();
+        const command = client.commands.get(interaction.commandName);
 
-        if (!client.commands.has(commandName)) return;
-
-        const command = client.commands.get(commandName);
+        if (!command) return;
 
         try {
-            await command.execute(message, args);
+            await command.execute(interaction);
         } catch (error) {
             console.error(error);
-            await message.reply('There was an error executing that command.');
+            await interaction.reply({ content: 'There was an error executing that command.', ephemeral: true });
         }
     });
 };
