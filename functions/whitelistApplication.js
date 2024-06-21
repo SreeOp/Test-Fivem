@@ -2,14 +2,27 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('
 
 module.exports = async (client) => {
     client.on('ready', async () => {
-        console.log(`Logged in as ${client.user.tag}!`);
+        const channel = client.channels.cache.get('1253323014003757189'); // Application channel ID
+        const embed = new EmbedBuilder()
+            .setTitle('FiveM Whitelist Application')
+            .setDescription('Click the button below to apply for the whitelist.');
+
+        const row = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('apply_whitelist')
+                    .setLabel('Apply')
+                    .setStyle(ButtonStyle.Primary),
+            );
+
+        await channel.send({ embeds: [embed], components: [row] });
     });
 
     client.on('interactionCreate', async (interaction) => {
         if (!interaction.isButton()) return;
 
         if (interaction.customId === 'apply_whitelist') {
-            await interaction.reply({ content: 'Please check your DMs for the application questions.', ephemeral: true });
+            await interaction.reply({ content: 'Please answer the following questions for your application:', ephemeral: true });
 
             const questions = [
                 'What is your name?',
@@ -17,20 +30,17 @@ module.exports = async (client) => {
                 'Have you read the rules? (yes/no)',
             ];
 
-            const applicationDetails = [];
-
-            const dmChannel = await interaction.user.createDM();
             let counter = 0;
+            const applicationDetails = [];
 
             const askQuestion = async () => {
                 if (counter < questions.length) {
-                    await dmChannel.send(questions[counter]);
+                    await interaction.followUp({ content: questions[counter], ephemeral: true });
                 }
             };
 
-            const collector = dmChannel.createMessageCollector({ time: 60000 });
-
-            askQuestion();
+            const filter = (m) => m.author.id === interaction.user.id;
+            const collector = interaction.channel.createMessageCollector({ filter, time: 60000 });
 
             collector.on('collect', (m) => {
                 applicationDetails.push(m.content);
@@ -44,8 +54,6 @@ module.exports = async (client) => {
 
             collector.on('end', async () => {
                 const applicationChannel = client.channels.cache.get('1253323112972550185'); // Application review channel ID
-                if (!applicationChannel) return console.error('Application review channel not found.');
-
                 const applicationEmbed = new EmbedBuilder()
                     .setTitle('New Whitelist Application')
                     .setDescription(`Application from ${interaction.user.tag}`)
@@ -73,24 +81,24 @@ module.exports = async (client) => {
 
                 await applicationChannel.send({ embeds: [applicationEmbed], components: [actionRow] });
             });
+
+            askQuestion();
         }
 
         if (['accept_application', 'pending_application', 'reject_application'].includes(interaction.customId)) {
             const userId = interaction.message.embeds[0].description.split(' ')[2];
-            const user = await client.users.fetch(userId).catch(console.error);
-            if (!user) return;
-
+            const user = await client.users.fetch(userId);
             let dmMessage;
             let role;
 
             switch (interaction.customId) {
                 case 'accept_application':
                     dmMessage = 'Your application has been accepted!';
-                    role = '1253347204601741342'; // Accepted role ID (update with your role ID)
+                    role = '1253347204601741342'; // Accepted role ID
                     break;
                 case 'pending_application':
                     dmMessage = 'Your application is pending review.';
-                    role = '1253347271718735882'; // Pending role ID (update with your role ID)
+                    role = '1253347271718735882'; // Pending role ID
                     break;
                 case 'reject_application':
                     dmMessage = 'Your application has been rejected.';
@@ -98,14 +106,12 @@ module.exports = async (client) => {
                     break;
             }
 
-            await user.send(dmMessage).catch(console.error);
+            await user.send(dmMessage);
 
             if (role) {
-                const guild = client.guilds.cache.get('754291343551102976'); // Replace with your Guild ID
-                if (!guild) return console.error('Guild not found.');
-                const member = await guild.members.fetch(userId).catch(console.error);
-                if (!member) return console.error('Member not found.');
-                await member.roles.add(role).catch(console.error);
+                const guild = client.guilds.cache.get('754291343551102976'); // Replace with your guild ID
+                const member = await guild.members.fetch(userId);
+                await member.roles.add(role);
             }
 
             await interaction.update({ content: `Application ${interaction.customId.replace('_application', '')}`, components: [] });
