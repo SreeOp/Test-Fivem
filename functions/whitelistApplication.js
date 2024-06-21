@@ -1,18 +1,18 @@
-const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 
 module.exports = async (client) => {
     client.on('ready', async () => {
         const channel = client.channels.cache.get('1253323014003757189'); // Replace with your channel ID
-        const embed = new MessageEmbed()
+        const embed = new EmbedBuilder()
             .setTitle('FiveM Whitelist Application')
             .setDescription('Click the button below to apply for the whitelist.');
 
-        const row = new MessageActionRow()
+        const row = new ActionRowBuilder()
             .addComponents(
-                new MessageButton()
+                new ButtonBuilder()
                     .setCustomId('apply_whitelist')
                     .setLabel('Apply')
-                    .setStyle('PRIMARY'),
+                    .setStyle(ButtonStyle.Primary),
             );
 
         await channel.send({ embeds: [embed], components: [row] });
@@ -39,7 +39,7 @@ module.exports = async (client) => {
 
             collector.on('end', async () => {
                 const applicationChannel = client.channels.cache.get('1253323112972550185'); // Replace with your application review channel ID
-                const applicationEmbed = new MessageEmbed()
+                const applicationEmbed = new EmbedBuilder()
                     .setTitle('New Whitelist Application')
                     .setDescription(`Application from ${interaction.user.tag}`)
                     .addFields(
@@ -48,20 +48,20 @@ module.exports = async (client) => {
                         { name: 'Question 3', value: applicationDetails[2] }
                     );
 
-                const actionRow = new MessageActionRow()
+                const actionRow = new ActionRowBuilder()
                     .addComponents(
-                        new MessageButton()
+                        new ButtonBuilder()
                             .setCustomId('accept_application')
                             .setLabel('Accept')
-                            .setStyle('SUCCESS'),
-                        new MessageButton()
+                            .setStyle(ButtonStyle.Success),
+                        new ButtonBuilder()
                             .setCustomId('pending_application')
                             .setLabel('Pending')
-                            .setStyle('SECONDARY'),
-                        new MessageButton()
+                            .setStyle(ButtonStyle.Secondary),
+                        new ButtonBuilder()
                             .setCustomId('reject_application')
                             .setLabel('Reject')
-                            .setStyle('DANGER'),
+                            .setStyle(ButtonStyle.Danger),
                     );
 
                 await applicationChannel.send({ embeds: [applicationEmbed], components: [actionRow] });
