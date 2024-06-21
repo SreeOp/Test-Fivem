@@ -1,120 +1,122 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
+const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
 
 module.exports = async (client) => {
+    // Event listener for when bot is ready
     client.on('ready', async () => {
-        const channel = client.channels.cache.get('1253323014003757189'); // Application channel ID
-        const embed = new EmbedBuilder()
-            .setTitle('FiveM Whitelist Application')
-            .setDescription('Click the button below to apply for the whitelist.');
-
-        const row = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setCustomId('apply_whitelist')
-                    .setLabel('Apply')
-                    .setStyle(ButtonStyle.Primary),
-            );
-
-        await channel.send({ embeds: [embed], components: [row] });
+        console.log(`Logged in as ${client.user.tag}!`);
     });
 
+    // Event listener for interactions (e.g., button clicks)
     client.on('interactionCreate', async (interaction) => {
         if (!interaction.isButton()) return;
 
         if (interaction.customId === 'apply_whitelist') {
             await interaction.reply({ content: 'Please answer the following questions for your application:', ephemeral: true });
 
-            const questions = [
-                'What is your name?',
-                'How old are you?',
-                'Have you read the rules? (yes/no)',
-            ];
+            // Collect application details
+            const applicationDetails = {};
+            const questions = ['Name', 'Age', 'Have you read the rules? (yes/no)']; // Adjust questions as needed
 
-            let counter = 0;
-            const applicationDetails = [];
+            for (const question of questions) {
+                await interaction.followUp({ content: question, ephemeral: true });
 
-            const askQuestion = async () => {
-                if (counter < questions.length) {
-                    await interaction.followUp({ content: questions[counter], ephemeral: true });
+                const filter = (m) => m.author.id === interaction.user.id;
+                const response = await interaction.channel.awaitMessageComponent({ filter, time: 60000 });
+
+                if (!response) {
+                    await interaction.followUp({ content: 'Application timed out. Please try again.', ephemeral: true });
+                    return;
                 }
-            };
 
-            const filter = (m) => m.author.id === interaction.user.id;
-            const collector = interaction.channel.createMessageCollector({ filter, time: 60000 });
+                applicationDetails[question] = response.customId || response.content;
+            }
 
-            collector.on('collect', (m) => {
-                applicationDetails.push(m.content);
-                counter++;
-                if (counter < questions.length) {
-                    askQuestion();
-                } else {
-                    collector.stop();
-                }
-            });
+            // Send application details to review channel
+            const applicationChannel = client.channels.cache.get('123456789012345678'); // Replace with your application review channel ID
+            if (!applicationChannel) return console.error('Application channel not found.');
 
-            collector.on('end', async () => {
-                const applicationChannel = client.channels.cache.get('1253323112972550185'); // Application review channel ID
-                const applicationEmbed = new EmbedBuilder()
-                    .setTitle('New Whitelist Application')
-                    .setDescription(`Application from ${interaction.user.tag}`)
-                    .addFields(
-                        { name: 'Name', value: applicationDetails[0] },
-                        { name: 'Age', value: applicationDetails[1] },
-                        { name: 'Read Rules', value: applicationDetails[2] }
-                    );
+            const applicationEmbed = new MessageEmbed()
+                .setTitle('New Whitelist Application')
+                .setDescription(`Application from ${interaction.user.tag}`)
+                .addFields(
+                    { name: 'Name', value: applicationDetails['Name'] },
+                    { name: 'Age', value: applicationDetails['Age'] },
+                    { name: 'Read Rules', value: applicationDetails['Have you read the rules? (yes/no)'] },
+                );
 
-                const actionRow = new ActionRowBuilder()
-                    .addComponents(
-                        new ButtonBuilder()
-                            .setCustomId('accept_application')
-                            .setLabel('Accept')
-                            .setStyle(ButtonStyle.Success),
-                        new ButtonBuilder()
-                            .setCustomId('pending_application')
-                            .setLabel('Pending')
-                            .setStyle(ButtonStyle.Secondary),
-                        new ButtonBuilder()
-                            .setCustomId('reject_application')
-                            .setLabel('Reject')
-                            .setStyle(ButtonStyle.Danger),
-                    );
+            const actionRow = new MessageActionRow()
+                .addComponents(
+                    new MessageButton()
+                        .setCustomId('accept_application')
+                        .setLabel('Accept')
+                        .setStyle('SUCCESS'),
+                    new MessageButton()
+                        .setCustomId('pending_application')
+                        .setLabel('Pending')
+                        .setStyle('SECONDARY'),
+                    new MessageButton()
+                        .setCustomId('reject_application')
+                        .setLabel('Reject')
+                        .setStyle('DANGER'),
+                );
 
-                await applicationChannel.send({ embeds: [applicationEmbed], components: [actionRow] });
-            });
-
-            askQuestion();
+            await applicationChannel.send({ embeds: [applicationEmbed], components: [actionRow] });
         }
 
         if (['accept_application', 'pending_application', 'reject_application'].includes(interaction.customId)) {
-            const userId = interaction.message.embeds[0].description.split(' ')[2].slice(2, -1); // Extract the user ID correctly
+            const userId = interaction.message.embeds[0].description.split(' ')[2].slice(2, -1); // Extract user ID from embed description
+
+            if (!userId) {
+                await interaction.reply({ content: 'Unable to fetch user information. Please try again later.', ephemeral: true });
+                return;
+            }
+
             const user = await client.users.fetch(userId);
+
+            if (!user) {
+                await interaction.reply({ content: 'User not found. Please try again later.', ephemeral: true });
+                return;
+            }
+
             let dmMessage;
             let role;
 
             switch (interaction.customId) {
                 case 'accept_application':
                     dmMessage = 'Your application has been accepted!';
-                    role = '1253347204601741342'; // Accepted role ID
+                    role = '123456789012345678'; // Replace with your role ID for accepted applications
                     break;
                 case 'pending_application':
                     dmMessage = 'Your application is pending review.';
-                    role = '1253347271718735882'; // Pending role ID
+                    role = null; // No role change for pending applications
                     break;
                 case 'reject_application':
                     dmMessage = 'Your application has been rejected.';
-                    role = null;
+                    role = null; // No role change for rejected applications
                     break;
+                default:
+                    return;
             }
 
             await user.send(dmMessage);
 
             if (role) {
-                const guild = client.guilds.cache.get('GUILD_ID'); // Replace with your guild ID
+                const guild = client.guilds.cache.get('123456789012345678'); // Replace with your guild ID
+                if (!guild) {
+                    await interaction.reply({ content: 'Guild not found. Please try again later.', ephemeral: true });
+                    return;
+                }
+
                 const member = await guild.members.fetch(userId);
+                if (!member) {
+                    await interaction.reply({ content: 'Member not found. Please try again later.', ephemeral: true });
+                    return;
+                }
+
                 await member.roles.add(role);
             }
 
-            await interaction.update({ content: `Application ${interaction.customId.replace('_application', '')}`, components: [] });
+            await interaction.update({ content: `Application ${interaction.customId.replace('_application', '')} for ${user.username} processed.`, components: [] });
         }
     });
 };
