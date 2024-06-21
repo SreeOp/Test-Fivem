@@ -1,36 +1,36 @@
-const fs = require('fs');
-const path = require('path');
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
-require('dotenv').config();
+const { Client, Intents } = require('discord.js');
+const { config } = require('dotenv');
+const { sendApplicationMessage, handleApplicationInteraction } = require('./functions/whitelistApplication');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+// Load environment variables from .env file
+config();
 
-client.commands = new Collection();
+// Create a new Discord client instance
+const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
 
-// Load commands
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+// Bot token from environment variable
+const TOKEN = process.env.DISCORD_TOKEN;
 
-for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    const command = require(filePath);
-    client.commands.set(command.data.name, command);
-}
-
-// Load functions
-const functionsPath = path.join(__dirname, 'functions');
-const functionFiles = fs.readdirSync(functionsPath).filter(file => file.endsWith('.js'));
-
-for (const file of functionFiles) {
-    const filePath = path.join(functionsPath, file);
-    const func = require(filePath);
-    if (typeof func === 'function') {
-        func(client);
-    }
-}
-
+// Event listener for when the bot is ready
 client.once('ready', () => {
-    console.log(`Logged in as ${client.user.tag}!`);
+    console.log('Bot is ready');
 });
 
-client.login(process.env.DISCORD_TOKEN);
+// Event listener for handling interactions
+client.on('interactionCreate', async (interaction) => {
+    try {
+        await handleApplicationInteraction(interaction);
+    } catch (error) {
+        console.error('Error handling interaction:', error);
+        await interaction.reply({ content: 'An error occurred while handling your interaction.', ephemeral: true });
+    }
+});
+
+// Log in to Discord with your app's token
+client.login(TOKEN).then(() => {
+    console.log('Logged in to Discord');
+    // Replace 'CHANNEL_ID' with the ID of the channel where you want to send the application message
+    sendApplicationMessage(client, '1253323014003757189);
+}).catch((error) => {
+    console.error('Error logging in to Discord:', error);
+});
