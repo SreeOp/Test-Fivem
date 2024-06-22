@@ -61,11 +61,4 @@ module.exports = async (interaction) => {
         } else if (interaction.customId === 'reject_application') {
             await user.send('Your application has been rejected.');
             const role = interaction.guild.roles.cache.find(role => role.name === 'Rejected');
-            const member = interaction.guild.members.cache.get(user.id);
-            if (member) {
-                await member.roles.add(role);
-            }
-        }
-        await interaction.reply({ content: 'Action has been taken on the application.', ephemeral: true });
-    }
-};
+            const member = interaction.guild.members.cache.get(user.id
