@@ -4,12 +4,12 @@ require('dotenv').config();
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
 
 client.commands = new Collection();
-const applicationChannelId = '';
+let applicationChannelId = '';
+let applicationSubmissionChannelId = '';
 
-// Command to set application channel and send application embed
 client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}`);
-    
+
     const commands = [
         {
             name: 'setapplication',
@@ -17,8 +17,20 @@ client.once('ready', async () => {
             options: [
                 {
                     name: 'channel',
-                    type: 'CHANNEL',
+                    type: 7, // Channel type
                     description: 'The channel to send the application form',
+                    required: true
+                }
+            ]
+        },
+        {
+            name: 'setsubmissions',
+            description: 'Set the submissions channel',
+            options: [
+                {
+                    name: 'channel',
+                    type: 7, // Channel type
+                    description: 'The channel to receive submitted applications',
                     required: true
                 }
             ]
@@ -61,6 +73,12 @@ client.on('interactionCreate', async interaction => {
                 await channel.send({ embeds: [embed], components: [buttons] });
 
                 await interaction.reply({ content: `Application form has been sent to ${channel}`, ephemeral: true });
+            }
+        } else if (commandName === 'setsubmissions') {
+            const channel = interaction.options.getChannel('channel');
+            if (channel) {
+                applicationSubmissionChannelId = channel.id;
+                await interaction.reply({ content: `Submission channel has been set to ${channel}`, ephemeral: true });
             }
         }
     } else if (interaction.isButton()) {
@@ -140,7 +158,7 @@ client.on('interactionCreate', async interaction => {
             .setFooter({ text: `Submitted by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
             .setTimestamp();
 
-        const applicationChannel = client.channels.cache.get(applicationChannelId);
+        const submissionChannel = client.channels.cache.get(applicationSubmissionChannelId);
 
         const buttons = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
@@ -157,7 +175,7 @@ client.on('interactionCreate', async interaction => {
                 .setStyle(ButtonStyle.Secondary)
         );
 
-        await applicationChannel.send({ embeds: [applicationEmbed], components: [buttons] });
+        await submissionChannel.send({ embeds: [applicationEmbed], components: [buttons] });
 
         await interaction.reply({ content: 'Your application has been submitted!', ephemeral: true });
     }
