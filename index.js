@@ -1,7 +1,32 @@
-const { Client, GatewayIntentBits, Collection, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, InteractionType, ModalBuilder, TextInputBuilder, TextInputStyle, REST, Routes } = require('discord.js');
+const { 
+    Client, 
+    GatewayIntentBits, 
+    Collection, 
+    EmbedBuilder, 
+    ActionRowBuilder, 
+    ButtonBuilder, 
+    ButtonStyle, 
+    InteractionType, 
+    ModalBuilder, 
+    TextInputBuilder, 
+    TextInputStyle, 
+    REST, 
+    Routes 
+} = require('discord.js');
 require('dotenv').config();
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
+const handleApplicationCommand = require('./functions/handleApplicationCommand');
+const handleSubmissionCommand = require('./functions/handleSubmissionCommand');
+const handleButtonInteraction = require('./functions/handleButtonInteraction');
+const handleModalSubmit = require('./functions/handleModalSubmit');
+
+const client = new Client({ intents: [
+    GatewayIntentBits.Guilds, 
+    GatewayIntentBits.GuildMessages, 
+    GatewayIntentBits.MessageContent, 
+    GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.GuildMembers 
+] });
 
 client.commands = new Collection();
 let applicationChannelId = '';
@@ -52,50 +77,15 @@ client.once('ready', async () => {
 
 client.on('interactionCreate', async interaction => {
     if (interaction.isCommand()) {
-        const { commandName } = interaction;
-
-        if (commandName === 'setapplication') {
-            const channel = interaction.options.getChannel('channel');
-            if (channel) {
-                applicationChannelId = channel.id;
-                const embed = new EmbedBuilder()
-                    .setTitle('Whitelist Application')
-                    .setDescription('Apply here for Whitelist\n\n🟢 **Interview:**\nWhitelist Interviews are available 24x7\n\n🟢 **Availability:**\nWe are usually always available between peak times - 06:00 PM to 08:00 PM.\n\n**NOTE:**\nCheck the rules before applying')
-                    .setImage('attachment://image.jpg');
-
-                const buttons = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder()
-                        .setCustomId('apply_whitelist')
-                        .setLabel('Apply For Whitelist')
-                        .setStyle(ButtonStyle.Primary)
-                );
-
-                console.log(`Sending embed to channel ${channel.id}`);
-                try {
-                    await channel.send({ embeds: [embed], components: [buttons] });
-                    await interaction.reply({ content: `Application form has been sent to ${channel}`, ephemeral: true });
-                } catch (error) {
-                    console.error('Failed to send message to channel:', error);
-                    await interaction.reply({ content: 'Failed to send message to the specified channel.', ephemeral: true });
-                }
-            } else {
-                console.log('Channel not found or invalid.');
-                await interaction.reply({ content: 'Failed to find or access the specified channel.', ephemeral: true });
-            }
-        } else if (commandName === 'setsubmissions') {
-            const channel = interaction.options.getChannel('channel');
-            if (channel) {
-                applicationSubmissionChannelId = channel.id;
-                await interaction.reply({ content: `Submission channel has been set to ${channel}`, ephemeral: true });
-            } else {
-                console.log('Channel not found or invalid.');
-                await interaction.reply({ content: 'Failed to find or access the specified channel.', ephemeral: true });
-            }
+        if (interaction.commandName === 'setapplication') {
+            await handleApplicationCommand(interaction, applicationChannelId);
+        } else if (interaction.commandName === 'setsubmissions') {
+            await handleSubmissionCommand(interaction, applicationSubmissionChannelId);
         }
     } else if (interaction.isButton()) {
-        // Handle button interactions
+        await handleButtonInteraction(interaction);
     } else if (interaction.type === InteractionType.ModalSubmit && interaction.customId === 'whitelist_application') {
-        // Handle modal submissions
+        await handleModalSubmit(interaction, applicationSubmissionChannelId);
     }
 });
 
