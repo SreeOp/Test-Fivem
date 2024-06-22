@@ -44,11 +44,11 @@ const functionFiles = fs.readdirSync(functionsPath).filter(file => file.endsWith
 for (const file of functionFiles) {
     const filePath = path.join(functionsPath, file);
     const func = require(filePath);
-    func(client);
+    if (typeof func === 'function') {
+        func(client);
+    } else {
+        console.error(`Error: ${filePath} does not export a function`);
+    }
 }
-
-client.once('ready', () => {
-    console.log(`Logged in as ${client.user.tag}!`);
-});
 
 client.login(process.env.DISCORD_TOKEN);
