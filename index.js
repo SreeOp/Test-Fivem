@@ -61,7 +61,7 @@ client.on('interactionCreate', async interaction => {
                 const embed = new EmbedBuilder()
                     .setTitle('Whitelist Application')
                     .setDescription('Apply here for Whitelist\n\n🟢 **Interview:**\nWhitelist Interviews are available 24x7\n\n🟢 **Availability:**\nWe are usually always available between peak times - 06:00 PM to 08:00 PM.\n\n**NOTE:**\nCheck the rules before applying')
-                    .setImage('attachment://image.jpg');
+                    .setImage('https://media.discordapp.net/attachments/1167836302239084586/1198202736924168252/FN3.png?ex=6677efc2&is=66769e42&hm=aa42077105234bf504735d5c4ded0750c85958789f7b8bff241d5f4b937167e2&');
 
                 const buttons = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
@@ -130,14 +130,15 @@ client.on('interactionCreate', async interaction => {
             const [action, userId] = interaction.customId.split(':');
             const user = await client.users.fetch(userId);
 
+            const actionType = action.split('_')[1];
             const embed = new EmbedBuilder()
                 .setTitle('Whitelist Application')
-                .setDescription(`Your whitelist application has been ${action.split('_')[1]}!`)
+                .setDescription(`Your whitelist application has been ${actionType}!`)
                 .setTimestamp();
 
             await user.send({ embeds: [embed] });
 
-            await interaction.reply({ content: `Application has been marked as ${action.split('_')[1]}`, ephemeral: true });
+            await interaction.reply({ content: `Application has been marked as ${actionType}`, ephemeral: true });
         }
     } else if (interaction.type === InteractionType.ModalSubmit && interaction.customId === 'whitelist_application') {
         const charName = interaction.fields.getTextInputValue('character_name');
