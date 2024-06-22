@@ -1,15 +1,15 @@
-require('dotenv').config();
-const Discord = require('discord.js');
+const { Client, Intents } = require('discord.js');
 const FiveM = require('fivem');
+require('dotenv').config();
 
-const client = new Discord.Client();
+const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
 const fivemServer = new FiveM.Server('pacific-myrtle.gl.at.ply.gg:42340:30120'); // Replace with your server IP and port
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.on('message', async (message) => {
+client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.content.startsWith('/')) return;
 
   const args = message.content.slice(1).trim().split(/ +/);
