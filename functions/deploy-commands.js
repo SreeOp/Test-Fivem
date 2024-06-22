@@ -3,6 +3,7 @@ require('dotenv').config();
 
 const commands = [
     // Add your command data here
+    // Example: new SlashCommandBuilder().setName('ping').setDescription('Replies with Pong!').toJSON()
 ];
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
