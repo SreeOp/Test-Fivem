@@ -1,36 +1,23 @@
-const { Client, GatewayIntentBits, Collection, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, InteractionType, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, InteractionType, REST, Routes, ChannelType, PermissionsBitField } = require('discord.js');
 require('dotenv').config();
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
 
 client.commands = new Collection();
-let applicationChannelId = '';
-let applicationSubmissionChannelId = '';
+let ticketCategoryId = '';
 
 client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}`);
 
     const commands = [
         {
-            name: 'setapplication',
-            description: 'Set the application channel',
+            name: 'setticketcategory',
+            description: 'Set the category for ticket channels',
             options: [
                 {
-                    name: 'channel',
+                    name: 'category',
                     type: 7, // Channel type
-                    description: 'The channel to send the application form',
-                    required: true
-                }
-            ]
-        },
-        {
-            name: 'setsubmissions',
-            description: 'Set the submissions channel',
-            options: [
-                {
-                    name: 'channel',
-                    type: 7, // Channel type
-                    description: 'The channel to receive submitted applications',
+                    description: 'The category to create ticket channels in',
                     required: true
                 }
             ]
@@ -54,53 +41,36 @@ client.on('interactionCreate', async interaction => {
     if (interaction.isCommand()) {
         const { commandName } = interaction;
 
-        if (commandName === 'setapplication') {
-            const channel = interaction.options.getChannel('channel');
-            if (channel) {
-                applicationChannelId = channel.id;
-                console.log(`Application channel set to: ${applicationChannelId}`);
+        if (commandName === 'setticketcategory') {
+            const category = interaction.options.getChannel('category');
+            if (category && category.type === ChannelType.GuildCategory) {
+                ticketCategoryId = category.id;
+                console.log(`Ticket category set to: ${ticketCategoryId}`);
+                await interaction.reply({ content: `Ticket category has been set to ${category.name}`, ephemeral: true });
 
+                // Send ticket creation button
                 const embed = new EmbedBuilder()
-                    .setTitle('Whitelist Application')
-                    .setDescription('Apply here for Whitelist\n\n🟢 **Interview:**\nWhitelist Interviews are available 24x7\n\n🟢 **Availability:**\nWe are usually always available between peak times - 06:00 PM to 08:00 PM.\n\n**NOTE:**\nCheck the rules before applying')
-                    .setImage('attachment://image.jpg');
+                    .setTitle('Support Ticket')
+                    .setDescription('Click the button below to create a new support ticket.');
 
-                const buttons = new ActionRowBuilder().addComponents(
+                const button = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
-                        .setCustomId('apply_whitelist')
-                        .setLabel('Apply For Whitelist')
+                        .setCustomId('create_ticket')
+                        .setLabel('Create Ticket')
                         .setStyle(ButtonStyle.Primary)
                 );
 
-                console.log(`Sending embed to channel ${channel.id}`);
-                try {
-                    await channel.send({ embeds: [embed], components: [buttons] });
-                    await interaction.reply({ content: `Application form has been sent to ${channel}`, ephemeral: true });
-                } catch (error) {
-                    console.error('Failed to send message to channel:', error);
-                    await interaction.reply({ content: 'Failed to send message to the specified channel.', ephemeral: true });
-                }
+                await category.guild.systemChannel.send({ embeds: [embed], components: [button] });
             } else {
-                console.log('Channel not found or invalid.');
-                await interaction.reply({ content: 'Failed to find or access the specified channel.', ephemeral: true });
-            }
-        } else if (commandName === 'setsubmissions') {
-            const channel = interaction.options.getChannel('channel');
-            if (channel) {
-                applicationSubmissionChannelId = channel.id;
-                console.log(`Submission channel set to: ${applicationSubmissionChannelId}`);
-                await interaction.reply({ content: `Submission channel has been set to ${channel}`, ephemeral: true });
-            } else {
-                console.log('Channel not found or invalid.');
-                await interaction.reply({ content: 'Failed to find or access the specified channel.', ephemeral: true });
+                console.log('Category not found or invalid.');
+                await interaction.reply({ content: 'Failed to find or access the specified category.', ephemeral: true });
             }
         }
     } else if (interaction.isButton()) {
         const handleButtonInteraction = require('./functions/handleButtonInteraction');
-        await handleButtonInteraction(interaction);
-    } else if (interaction.type === InteractionType.ModalSubmit && interaction.customId === 'whitelist_application') {
-        const handleModalSubmit = require('./functions/handleModalSubmit');
-        await handleModalSubmit(interaction, applicationSubmissionChannelId);
+        await handleButtonInteraction(interaction, ticketCategoryId);
+    } else if (interaction.type === InteractionType.ModalSubmit) {
+        // Handle modal submissions if needed
     }
 });
 
