@@ -1,16 +1,69 @@
-const { Client, GatewayIntentBits, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, InteractionType, ChannelType } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, InteractionType, REST, Routes } = require('discord.js');
 require('dotenv').config();
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
 
 client.commands = new Collection();
+const applicationChannelId = '';
 
-client.once('ready', () => {
+// Command to set application channel and send application embed
+client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}`);
+    
+    const commands = [
+        {
+            name: 'setapplication',
+            description: 'Set the application channel',
+            options: [
+                {
+                    name: 'channel',
+                    type: 'CHANNEL',
+                    description: 'The channel to send the application form',
+                    required: true
+                }
+            ]
+        }
+    ];
+
+    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+    try {
+        await rest.put(
+            Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
+            { body: commands },
+        );
+
+        console.log('Successfully registered application commands.');
+    } catch (error) {
+        console.error(error);
+    }
 });
 
 client.on('interactionCreate', async interaction => {
-    if (interaction.isButton()) {
+    if (interaction.isCommand()) {
+        const { commandName } = interaction;
+
+        if (commandName === 'setapplication') {
+            const channel = interaction.options.getChannel('channel');
+            if (channel) {
+                applicationChannelId = channel.id;
+                const embed = new EmbedBuilder()
+                    .setTitle('Whitelist Application')
+                    .setDescription('Apply here for Whitelist\n\n🟢 **Interview:**\nWhitelist Interviews are available 24x7\n\n🟢 **Availability:**\nWe are usually always available between peak times - 06:00 PM to 08:00 PM.\n\n**NOTE:**\nCheck the rules before applying')
+                    .setImage('attachment://image.jpg');
+
+                const buttons = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('apply_whitelist')
+                        .setLabel('Apply For Whitelist')
+                        .setStyle(ButtonStyle.Primary)
+                );
+
+                await channel.send({ embeds: [embed], components: [buttons] });
+
+                await interaction.reply({ content: `Application form has been sent to ${channel}`, ephemeral: true });
+            }
+        }
+    } else if (interaction.isButton()) {
         if (interaction.customId === 'apply_whitelist') {
             const modal = new ModalBuilder()
                 .setCustomId('whitelist_application')
@@ -59,17 +112,16 @@ client.on('interactionCreate', async interaction => {
             const [action, userId] = interaction.customId.split(':');
             const user = await client.users.fetch(userId);
 
-            if (action === 'whitelist_accept') {
-                await user.send('Your whitelist application has been accepted!');
-            } else if (action === 'whitelist_reject') {
-                await user.send('Your whitelist application has been rejected.');
-            } else if (action === 'whitelist_pending') {
-                await user.send('Your whitelist application is pending.');
-            }
+            const embed = new EmbedBuilder()
+                .setTitle('Whitelist Application')
+                .setDescription(`Your whitelist application has been ${action.split('_')[1]}!`)
+                .setTimestamp();
+
+            await user.send({ embeds: [embed] });
 
             await interaction.reply({ content: `Application has been marked as ${action.split('_')[1]}`, ephemeral: true });
         }
-    } else if (interaction.isModalSubmit() && interaction.customId === 'whitelist_application') {
+    } else if (interaction.type === InteractionType.ModalSubmit && interaction.customId === 'whitelist_application') {
         const charName = interaction.fields.getTextInputValue('character_name');
         const charGender = interaction.fields.getTextInputValue('character_gender');
         const realName = interaction.fields.getTextInputValue('real_name');
@@ -88,7 +140,7 @@ client.on('interactionCreate', async interaction => {
             .setFooter({ text: `Submitted by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
             .setTimestamp();
 
-        const applicationChannel = client.channels.cache.get(process.env.APPLICATION_CHANNEL_ID);
+        const applicationChannel = client.channels.cache.get(applicationChannelId);
 
         const buttons = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
@@ -108,24 +160,6 @@ client.on('interactionCreate', async interaction => {
         await applicationChannel.send({ embeds: [applicationEmbed], components: [buttons] });
 
         await interaction.reply({ content: 'Your application has been submitted!', ephemeral: true });
-    }
-});
-
-client.on('messageCreate', async message => {
-    if (message.content === '!whitelist') {
-        const embed = new EmbedBuilder()
-            .setTitle('Whitelist Application')
-            .setDescription('Apply here for Whitelist\n\n🟢 **Interview:**\nWhitelist Interviews are available 24x7\n\n🟢 **Availability:**\nWe are usually always available between peak times - 06:00 PM to 08:00 PM.\n\n**NOTE:**\nCheck the rules before applying')
-            .setImage('attachment://image.jpg');
-
-        const buttons = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId('apply_whitelist')
-                .setLabel('Apply For Whitelist')
-                .setStyle(ButtonStyle.Primary)
-        );
-
-        await message.channel.send({ embeds: [embed], components: [buttons] });
     }
 });
 
