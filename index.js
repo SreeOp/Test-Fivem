@@ -14,7 +14,7 @@ const TOKEN = process.env.DISCORD_TOKEN;
 // Event listener for when the bot is ready
 client.once('ready', () => {
     console.log('Bot is ready');
-    // Replace 'CHANNEL_ID' with the ID of the channel where you want to send the application message
+    // Replace '1253323014003757189' with the ID of the channel where you want to send the application message
     sendApplicationMessage(client, '1253323014003757189');
 });
 
