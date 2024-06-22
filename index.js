@@ -1,49 +1,36 @@
 require('dotenv').config();
-const { Client, Intents } = require('discord.js');
-const axios = require('axios');
-const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
+const Discord = require('discord.js');
+const FiveM = require('fivem');
 
-const token = process.env.DISCORD_TOKEN;
-const fivemServerIP = 'pacific-myrtle.gl.at.ply.gg:42340'; // e.g., '127.0.0.1:30120'
+const client = new Discord.Client();
+const fivemServer = new FiveM.Server('pacific-myrtle.gl.at.ply.gg:42340:30120'); // Replace with your server IP and port
 
-client.once('ready', () => {
-    console.log(`Logged in as ${client.user.tag}!`);
+client.on('ready', () => {
+  console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.on('messageCreate', async message => {
-    if (!message.content.startsWith('/')) return;
+client.on('message', async (message) => {
+  if (message.author.bot || !message.content.startsWith('/')) return;
 
-    const args = message.content.slice(1).trim().split(/ +/);
-    const command = args.shift().toLowerCase();
+  const args = message.content.slice(1).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
 
-    if (command === 'status') {
-        try {
-            const response = await axios.get(`http://${fivemServerIP}/info.json`);
-            if (response.data) {
-                message.channel.send('The server is up and running!');
-            } else {
-                message.channel.send('The server is down.');
-            }
-        } catch (error) {
-            message.channel.send('Could not fetch server status.');
-        }
+  if (command === 'players') {
+    try {
+      const players = await fivemServer.getPlayers();
+
+      if (players && players.length > 0) {
+        const playerList = players.map((player) => player.name).join('\n');
+        message.channel.send(`Current players:\n${playerList}`);
+      } else {
+        message.channel.send('No players online.');
+      }
+    } catch (error) {
+      console.error('Failed to fetch player list:', error);
+      message.channel.send('Failed to fetch player list.');
     }
-
-    if (command === 'players') {
-        try {
-            const response = await axios.get(`http://${fivemServerIP}/players.json`);
-            if (response.data) {
-                const playerCount = response.data.length;
-                message.channel.send(`There are ${playerCount} players online.`);
-            } else {
-                message.channel.send('Could not fetch player count.');
-            }
-        } catch (error) {
-            message.channel.send('Could not fetch player count.');
-        }
-    }
-
-    // Add more commands as needed
+  }
 });
 
-client.login(token);
+const TOKEN = process.env.DISCORD_TOKEN;
+client.login(TOKEN);
