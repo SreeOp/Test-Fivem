@@ -4,7 +4,7 @@ const axios = require('axios');
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
 
 const token = process.env.DISCORD_TOKEN;
-const fivemServerIP = 'pacific-myrtle.gl.at.ply.gg:42340'; // e.g., '127.0.0.1:30120'
+const fivemServerIP = 'your_fivem_server_ip'; // e.g., '127.0.0.1:30120'
 
 client.once('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
