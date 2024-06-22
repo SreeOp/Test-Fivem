@@ -26,11 +26,18 @@ module.exports = async (interaction, applicationSubmissionChannelId) => {
             .setStyle(ButtonStyle.Danger)
     );
 
-    const submissionChannel = await interaction.client.channels.fetch(applicationSubmissionChannelId);
-    if (submissionChannel) {
-        await submissionChannel.send({ embeds: [embed], components: [buttons] });
-        await interaction.reply({ content: 'Your application has been submitted.', ephemeral: true });
-    } else {
-        await interaction.reply({ content: 'Submission channel not found. Please contact an admin.', ephemeral: true });
+    try {
+        const submissionChannel = await interaction.client.channels.fetch(applicationSubmissionChannelId);
+        if (submissionChannel) {
+            console.log(`Sending application to submission channel ${applicationSubmissionChannelId}`);
+            await submissionChannel.send({ embeds: [embed], components: [buttons] });
+            await interaction.reply({ content: 'Your application has been submitted.', ephemeral: true });
+        } else {
+            console.log('Submission channel not found.');
+            await interaction.reply({ content: 'Submission channel not found. Please contact an admin.', ephemeral: true });
+        }
+    } catch (error) {
+        console.error('Failed to fetch submission channel:', error);
+        await interaction.reply({ content: 'There was an error submitting your application. Please try again later.', ephemeral: true });
     }
 };
