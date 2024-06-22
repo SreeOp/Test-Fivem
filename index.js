@@ -37,9 +37,9 @@ const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
     }
 })();
 
-// Load functions
+// Load functions excluding deploy-commands.js
 const functionsPath = path.join(__dirname, 'functions');
-const functionFiles = fs.readdirSync(functionsPath).filter(file => file.endsWith('.js'));
+const functionFiles = fs.readdirSync(functionsPath).filter(file => file.endsWith('.js') && file !== 'deploy-commands.js');
 
 for (const file of functionFiles) {
     const filePath = path.join(functionsPath, file);
@@ -50,5 +50,9 @@ for (const file of functionFiles) {
         console.error(`Error: ${filePath} does not export a function`);
     }
 }
+
+client.once('ready', () => {
+    console.log(`Logged in as ${client.user.tag}!`);
+});
 
 client.login(process.env.DISCORD_TOKEN);
