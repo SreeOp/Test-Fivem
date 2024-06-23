@@ -4,5 +4,7 @@
 "description": "your_bots_description",
 "main": "index.js",
 "author": "your_name",
-"dependencies": {}
+"dependencies": {
+"discord.js": "github:vecchiotom/discord.js"
+}
 }
