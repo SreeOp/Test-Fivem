@@ -1,6 +1,5 @@
 require('dotenv').config();
-const { Client, Intents, MessageEmbed } = require('discord.js');
-const { MessageButton, MessageActionRow } = require('discord-buttons');
+const { Client, Intents, MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 const client = new Client({ 
     intents: [
         Intents.FLAGS.GUILDS, 
@@ -8,9 +7,9 @@ const client = new Client({
         Intents.FLAGS.DIRECT_MESSAGES,
         Intents.FLAGS.GUILD_MEMBERS,
         Intents.FLAGS.GUILD_MESSAGE_REACTIONS
-    ] 
+    ],
+    partials: ['MESSAGE', 'CHANNEL', 'REACTION'] 
 });
-require('discord-buttons')(client);
 
 const token = process.env.TOKEN;
 
@@ -35,76 +34,73 @@ client.on('messageCreate', async (message) => {
             .setColor('#00ff00');
 
         const applyButton = new MessageButton()
-            .setStyle('blurple')
+            .setCustomId('applyButton')
             .setLabel('Apply')
-            .setID('applyButton');
+            .setStyle('PRIMARY');
 
         const row = new MessageActionRow()
-            .addComponent(applyButton);
+            .addComponents(applyButton);
 
         client.channels.cache.get(applicationChannelId).send({ embeds: [embed], components: [row] });
     }
 });
 
-client.on('clickButton', async (button) => {
-    if (button.id === 'applyButton') {
-        await button.reply.send('Please fill out the application form.', true);
-        const filter = m => m.author.id === button.clicker.user.id;
-        const collector = button.channel.createMessageCollector({ filter, time: 60000, max: 1 });
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isButton()) return;
+
+    if (interaction.customId === 'applyButton') {
+        await interaction.reply({ content: 'Please fill out the application form.', ephemeral: true });
+
+        const filter = m => m.author.id === interaction.user.id;
+        const collector = interaction.channel.createMessageCollector({ filter, time: 60000, max: 1 });
 
         collector.on('collect', m => {
             const applicationEmbed = new MessageEmbed()
                 .setTitle('New Whitelist Application')
-                .setDescription(`Application from ${button.clicker.user.tag}`)
+                .setDescription(`Application from ${interaction.user.tag}`)
                 .addField('Application Content', m.content)
                 .setColor('#00ff00');
 
             const acceptButton = new MessageButton()
-                .setStyle('green')
+                .setCustomId('acceptButton')
                 .setLabel('Accept')
-                .setID('acceptButton');
+                .setStyle('SUCCESS');
 
             const pendingButton = new MessageButton()
-                .setStyle('grey')
+                .setCustomId('pendingButton')
                 .setLabel('Pending')
-                .setID('pendingButton');
+                .setStyle('SECONDARY');
 
             const rejectButton = new MessageButton()
-                .setStyle('red')
+                .setCustomId('rejectButton')
                 .setLabel('Reject')
-                .setID('rejectButton');
+                .setStyle('DANGER');
 
             const row = new MessageActionRow()
-                .addComponent(acceptButton)
-                .addComponent(pendingButton)
-                .addComponent(rejectButton);
+                .addComponents(acceptButton, pendingButton, rejectButton);
 
             if (applicationReviewChannelId) {
-                client.channels.cache.get(applicationReviewChannelId).send({ embeds: [applicationEmbed], components: [row] })
-                    .then(sentMessage => {
-                        sentMessage.react('👍');
-                    });
-
+                client.channels.cache.get(applicationReviewChannelId).send({ embeds: [applicationEmbed], components: [row] });
                 m.reply('Your application has been submitted.');
             } else {
                 m.reply('Application review channel is not set.');
             }
         });
-    } else if (button.id === 'acceptButton' || button.id === 'pendingButton' || button.id === 'rejectButton') {
-        const user = button.message.embeds[0].description.split(' ')[2];
-        const member = button.guild.members.cache.find(member => member.user.tag === user);
+    } else if (interaction.customId === 'acceptButton' || interaction.customId === 'pendingButton' || interaction.customId === 'rejectButton') {
+        const user = interaction.message.embeds[0].description.split(' ')[2];
+        const member = interaction.guild.members.cache.find(member => member.user.tag === user);
 
-        if (button.id === 'acceptButton') {
+        if (interaction.customId === 'acceptButton') {
             member.send('Your application has been accepted!');
-            const role = button.guild.roles.cache.find(r => r.name === 'Whitelisted');
+            const role = interaction.guild.roles.cache.find(r => r.name === 'Whitelisted');
             if (role) member.roles.add(role);
-        } else if (button.id === 'pendingButton') {
+        } else if (interaction.customId === 'pendingButton') {
             member.send('Your application is pending.');
-        } else if (button.id === 'rejectButton') {
+        } else if (interaction.customId === 'rejectButton') {
             member.send('Your application has been rejected.');
         }
 
-        button.reply.defer();
+        interaction.deferUpdate();
     }
 });
 
