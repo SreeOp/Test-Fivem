@@ -1,17 +1,21 @@
-const Enmap = require("enmap");
+const Enmap = require('enmap');
 
-module.exports = async (client) => {
+module.exports = (client) => {
   client.settings = new Enmap({
     name: "settings",
-    dataDir: "./databases/settings"
+    ensureProps: {
+      prefix: "!",
+      welcomeChannel: "general",
+      // Add other default settings as needed
+    }
   });
-  client.logger(`Started EnmapDB`.brightGreen);
-}
 
-/**
- * @INFO
- * Bot Coded by Zedro#2742 | https://discord.gg/8fYUFxMtAq
- * @INFO
- * Work for Milanio Development | https://discord.gg/8fYUFxMtAq
- * @INFO
- */
+  // Ensure default settings are present
+  client.settings.ensure("default", {
+    prefix: "!",
+    welcomeChannel: "general",
+    // Add other default settings as needed
+  });
+
+  console.log('Enmap initialized and default settings ensured.');
+};
