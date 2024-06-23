@@ -1,7 +1,15 @@
 require('dotenv').config();
-const Discord = require('discord.js');
-const client = new Discord.Client();
+const { Client, Intents, MessageEmbed } = require('discord.js');
 const { MessageButton, MessageActionRow } = require('discord-buttons');
+const client = new Client({ 
+    intents: [
+        Intents.FLAGS.GUILDS, 
+        Intents.FLAGS.GUILD_MESSAGES, 
+        Intents.FLAGS.DIRECT_MESSAGES,
+        Intents.FLAGS.GUILD_MEMBERS,
+        Intents.FLAGS.GUILD_MESSAGE_REACTIONS
+    ] 
+});
 require('discord-buttons')(client);
 
 const token = process.env.TOKEN;
@@ -13,7 +21,7 @@ client.once('ready', () => {
     console.log('Bot is online!');
 });
 
-client.on('message', async (message) => {
+client.on('messageCreate', async (message) => {
     if (message.content.startsWith('/setapplication')) {
         applicationChannelId = message.channel.id;
         message.channel.send('This channel has been set for whitelist applications.');
@@ -21,7 +29,7 @@ client.on('message', async (message) => {
         applicationReviewChannelId = message.channel.id;
         message.channel.send('This channel has been set for reviewing submitted applications.');
     } else if (message.content.startsWith('/postapplication') && applicationChannelId) {
-        const embed = new Discord.MessageEmbed()
+        const embed = new MessageEmbed()
             .setTitle('Whitelist Application')
             .setDescription('Click the button below to apply for the whitelist.')
             .setColor('#00ff00');
@@ -34,7 +42,7 @@ client.on('message', async (message) => {
         const row = new MessageActionRow()
             .addComponent(applyButton);
 
-        client.channels.cache.get(applicationChannelId).send(embed, row);
+        client.channels.cache.get(applicationChannelId).send({ embeds: [embed], components: [row] });
     }
 });
 
@@ -42,10 +50,10 @@ client.on('clickButton', async (button) => {
     if (button.id === 'applyButton') {
         await button.reply.send('Please fill out the application form.', true);
         const filter = m => m.author.id === button.clicker.user.id;
-        const collector = button.channel.createMessageCollector(filter, { time: 60000, max: 1 });
+        const collector = button.channel.createMessageCollector({ filter, time: 60000, max: 1 });
 
         collector.on('collect', m => {
-            const applicationEmbed = new Discord.MessageEmbed()
+            const applicationEmbed = new MessageEmbed()
                 .setTitle('New Whitelist Application')
                 .setDescription(`Application from ${button.clicker.user.tag}`)
                 .addField('Application Content', m.content)
@@ -72,7 +80,7 @@ client.on('clickButton', async (button) => {
                 .addComponent(rejectButton);
 
             if (applicationReviewChannelId) {
-                client.channels.cache.get(applicationReviewChannelId).send(applicationEmbed, row)
+                client.channels.cache.get(applicationReviewChannelId).send({ embeds: [applicationEmbed], components: [row] })
                     .then(sentMessage => {
                         sentMessage.react('👍');
                     });
