@@ -1,5 +1,10 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes } = require('discord.js');
+const { REST } = require('@discordjs/rest');
+const token = process.env.TOKEN;
+const clientId = process.env.CLIENT_ID;
+const guildId = process.env.GUILD_ID;
+
 const client = new Client({ 
     intents: [
         GatewayIntentBits.Guilds, 
@@ -12,8 +17,6 @@ const client = new Client({
     partials: [Partials.Message, Partials.Channel, Partials.Reaction] 
 });
 
-const token = process.env.TOKEN;
-
 let applicationChannelId = null;
 let applicationReviewChannelId = null;
 
@@ -21,14 +24,50 @@ client.once('ready', () => {
     console.log('Bot is online!');
 });
 
-client.on('messageCreate', async (message) => {
-    if (message.content.startsWith('/setapplication')) {
-        applicationChannelId = message.channel.id;
-        message.channel.send('This channel has been set for whitelist applications.');
-    } else if (message.content.startsWith('/setsubmitted')) {
-        applicationReviewChannelId = message.channel.id;
-        message.channel.send('This channel has been set for reviewing submitted applications.');
-    } else if (message.content.startsWith('/postapplication') && applicationChannelId) {
+const commands = [
+    {
+        name: 'setapplication',
+        description: 'Set the channel for whitelist applications',
+    },
+    {
+        name: 'setsubmitted',
+        description: 'Set the channel for reviewing submitted applications',
+    },
+    {
+        name: 'postapplication',
+        description: 'Post the application embed message in the application channel',
+    }
+];
+
+const rest = new REST({ version: '10' }).setToken(token);
+
+(async () => {
+    try {
+        console.log('Started refreshing application (/) commands.');
+
+        await rest.put(
+            Routes.applicationGuildCommands(clientId, guildId),
+            { body: commands },
+        );
+
+        console.log('Successfully reloaded application (/) commands.');
+    } catch (error) {
+        console.error(error);
+    }
+})();
+
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isChatInputCommand()) return;
+
+    const { commandName } = interaction;
+
+    if (commandName === 'setapplication') {
+        applicationChannelId = interaction.channel.id;
+        await interaction.reply('This channel has been set for whitelist applications.');
+    } else if (commandName === 'setsubmitted') {
+        applicationReviewChannelId = interaction.channel.id;
+        await interaction.reply('This channel has been set for reviewing submitted applications.');
+    } else if (commandName === 'postapplication' && applicationChannelId) {
         const embed = new EmbedBuilder()
             .setTitle('Whitelist Application')
             .setDescription('Click the button below to apply for the whitelist.')
@@ -43,6 +82,7 @@ client.on('messageCreate', async (message) => {
             .addComponents(applyButton);
 
         client.channels.cache.get(applicationChannelId).send({ embeds: [embed], components: [row] });
+        await interaction.reply('Application form has been posted.');
     }
 });
 
