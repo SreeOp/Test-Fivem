@@ -1,6 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes } = require('discord.js');
-const { REST } = require('@discordjs/rest');
+const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes, REST } = require('discord.js');
 const token = process.env.TOKEN;
 const clientId = process.env.CLIENT_ID;
 const guildId = process.env.GUILD_ID;
@@ -52,7 +51,7 @@ const rest = new REST({ version: '10' }).setToken(token);
 
         console.log('Successfully reloaded application (/) commands.');
     } catch (error) {
-        console.error(error);
+        console.error('Error refreshing application (/) commands:', error);
     }
 })();
 
@@ -64,9 +63,11 @@ client.on('interactionCreate', async (interaction) => {
     if (commandName === 'setapplication') {
         applicationChannelId = interaction.channel.id;
         await interaction.reply('This channel has been set for whitelist applications.');
+        console.log(`Application channel set to ${applicationChannelId}`);
     } else if (commandName === 'setsubmitted') {
         applicationReviewChannelId = interaction.channel.id;
         await interaction.reply('This channel has been set for reviewing submitted applications.');
+        console.log(`Application review channel set to ${applicationReviewChannelId}`);
     } else if (commandName === 'postapplication' && applicationChannelId) {
         const embed = new EmbedBuilder()
             .setTitle('Whitelist Application')
@@ -81,8 +82,13 @@ client.on('interactionCreate', async (interaction) => {
         const row = new ActionRowBuilder()
             .addComponents(applyButton);
 
-        client.channels.cache.get(applicationChannelId).send({ embeds: [embed], components: [row] });
-        await interaction.reply('Application form has been posted.');
+        const channel = client.channels.cache.get(applicationChannelId);
+        if (channel) {
+            channel.send({ embeds: [embed], components: [row] });
+            await interaction.reply('Application form has been posted.');
+        } else {
+            await interaction.reply('Application channel is not set.');
+        }
     }
 });
 
@@ -121,27 +127,35 @@ client.on('interactionCreate', async (interaction) => {
                 .addComponents(acceptButton, pendingButton, rejectButton);
 
             if (applicationReviewChannelId) {
-                client.channels.cache.get(applicationReviewChannelId).send({ embeds: [applicationEmbed], components: [row] });
-                m.reply('Your application has been submitted.');
+                const reviewChannel = client.channels.cache.get(applicationReviewChannelId);
+                if (reviewChannel) {
+                    reviewChannel.send({ embeds: [applicationEmbed], components: [row] });
+                    m.reply('Your application has been submitted.');
+                } else {
+                    m.reply('Application review channel is not set.');
+                }
             } else {
                 m.reply('Application review channel is not set.');
             }
         });
     } else if (interaction.customId === 'acceptButton' || interaction.customId === 'pendingButton' || interaction.customId === 'rejectButton') {
-        const user = interaction.message.embeds[0].description.split(' ')[2];
-        const member = interaction.guild.members.cache.find(member => member.user.tag === user);
+        const userTag = interaction.message.embeds[0].description.split(' ')[2];
+        const member = interaction.guild.members.cache.find(member => member.user.tag === userTag);
 
-        if (interaction.customId === 'acceptButton') {
-            member.send('Your application has been accepted!');
-            const role = interaction.guild.roles.cache.find(r => r.name === 'Whitelisted');
-            if (role) member.roles.add(role);
-        } else if (interaction.customId === 'pendingButton') {
-            member.send('Your application is pending.');
-        } else if (interaction.customId === 'rejectButton') {
-            member.send('Your application has been rejected.');
+        if (member) {
+            if (interaction.customId === 'acceptButton') {
+                member.send('Your application has been accepted!');
+                const role = interaction.guild.roles.cache.find(r => r.name === 'Whitelisted');
+                if (role) member.roles.add(role);
+            } else if (interaction.customId === 'pendingButton') {
+                member.send('Your application is pending.');
+            } else if (interaction.customId === 'rejectButton') {
+                member.send('Your application has been rejected.');
+            }
+            interaction.deferUpdate();
+        } else {
+            interaction.reply('User not found.');
         }
-
-        interaction.deferUpdate();
     }
 });
 
