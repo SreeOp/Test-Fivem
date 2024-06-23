@@ -2,7 +2,7 @@
 "name": "your_bots_name",
 "version": "1.0.0",
 "description": "your_bots_description",
-"main": "bot.js",
+"main": "index.js",
 "author": "your_name",
 "dependencies": {}
 }
