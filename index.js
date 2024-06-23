@@ -4,16 +4,16 @@ const token = process.env.TOKEN;
 const clientId = process.env.CLIENT_ID;
 const guildId = process.env.GUILD_ID;
 
-const client = new Client({ 
+const client = new Client({
     intents: [
-        GatewayIntentBits.Guilds, 
-        GatewayIntentBits.GuildMessages, 
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
         GatewayIntentBits.DirectMessages,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMessageReactions
     ],
-    partials: [Partials.Message, Partials.Channel, Partials.Reaction] 
+    partials: [Partials.Message, Partials.Channel, Partials.Reaction]
 });
 
 let applicationChannelId = null;
@@ -69,6 +69,8 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.reply('This channel has been set for reviewing submitted applications.');
         console.log(`Application review channel set to ${applicationReviewChannelId}`);
     } else if (commandName === 'postapplication' && applicationChannelId) {
+        await interaction.deferReply({ ephemeral: true });
+
         const embed = new EmbedBuilder()
             .setTitle('Whitelist Application')
             .setDescription('Click the button below to apply for the whitelist.')
@@ -84,10 +86,10 @@ client.on('interactionCreate', async (interaction) => {
 
         const channel = client.channels.cache.get(applicationChannelId);
         if (channel) {
-            channel.send({ embeds: [embed], components: [row] });
-            await interaction.reply('Application form has been posted.');
+            await channel.send({ embeds: [embed], components: [row] });
+            await interaction.deleteReply();
         } else {
-            await interaction.reply('Application channel is not set.');
+            await interaction.editReply('Application channel is not set.');
         }
     }
 });
