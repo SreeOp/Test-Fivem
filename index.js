@@ -103,7 +103,7 @@ client.on('interactionCreate', async (interaction) => {
         const filter = m => m.author.id === interaction.user.id;
         const collector = interaction.channel.createMessageCollector({ filter, time: 60000, max: 1 });
 
-        collector.on('collect', m => {
+        collector.on('collect', async m => {
             const applicationEmbed = new EmbedBuilder()
                 .setTitle('New Whitelist Application')
                 .setDescription(`Application from ${interaction.user.tag}`)
@@ -131,13 +131,13 @@ client.on('interactionCreate', async (interaction) => {
             if (applicationReviewChannelId) {
                 const reviewChannel = client.channels.cache.get(applicationReviewChannelId);
                 if (reviewChannel) {
-                    reviewChannel.send({ embeds: [applicationEmbed], components: [row] });
-                    m.reply('Your application has been submitted.');
+                    await reviewChannel.send({ content: `<@${interaction.user.id}>`, embeds: [applicationEmbed], components: [row] });
+                    await m.reply('Your application has been submitted.');
                 } else {
-                    m.reply('Application review channel is not set.');
+                    await m.reply('Application review channel is not set.');
                 }
             } else {
-                m.reply('Application review channel is not set.');
+                await m.reply('Application review channel is not set.');
             }
         });
     } else if (interaction.customId === 'acceptButton' || interaction.customId === 'pendingButton' || interaction.customId === 'rejectButton') {
