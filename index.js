@@ -1,14 +1,15 @@
 require('dotenv').config();
-const { Client, Intents, MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const client = new Client({ 
     intents: [
-        Intents.FLAGS.GUILDS, 
-        Intents.FLAGS.GUILD_MESSAGES, 
-        Intents.FLAGS.DIRECT_MESSAGES,
-        Intents.FLAGS.GUILD_MEMBERS,
-        Intents.FLAGS.GUILD_MESSAGE_REACTIONS
+        GatewayIntentBits.Guilds, 
+        GatewayIntentBits.GuildMessages, 
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMessageReactions
     ],
-    partials: ['MESSAGE', 'CHANNEL', 'REACTION'] 
+    partials: [Partials.Message, Partials.Channel, Partials.Reaction] 
 });
 
 const token = process.env.TOKEN;
@@ -28,17 +29,17 @@ client.on('messageCreate', async (message) => {
         applicationReviewChannelId = message.channel.id;
         message.channel.send('This channel has been set for reviewing submitted applications.');
     } else if (message.content.startsWith('/postapplication') && applicationChannelId) {
-        const embed = new MessageEmbed()
+        const embed = new EmbedBuilder()
             .setTitle('Whitelist Application')
             .setDescription('Click the button below to apply for the whitelist.')
             .setColor('#00ff00');
 
-        const applyButton = new MessageButton()
+        const applyButton = new ButtonBuilder()
             .setCustomId('applyButton')
             .setLabel('Apply')
-            .setStyle('PRIMARY');
+            .setStyle(ButtonStyle.Primary);
 
-        const row = new MessageActionRow()
+        const row = new ActionRowBuilder()
             .addComponents(applyButton);
 
         client.channels.cache.get(applicationChannelId).send({ embeds: [embed], components: [row] });
@@ -55,28 +56,28 @@ client.on('interactionCreate', async (interaction) => {
         const collector = interaction.channel.createMessageCollector({ filter, time: 60000, max: 1 });
 
         collector.on('collect', m => {
-            const applicationEmbed = new MessageEmbed()
+            const applicationEmbed = new EmbedBuilder()
                 .setTitle('New Whitelist Application')
                 .setDescription(`Application from ${interaction.user.tag}`)
-                .addField('Application Content', m.content)
+                .addFields([{ name: 'Application Content', value: m.content }])
                 .setColor('#00ff00');
 
-            const acceptButton = new MessageButton()
+            const acceptButton = new ButtonBuilder()
                 .setCustomId('acceptButton')
                 .setLabel('Accept')
-                .setStyle('SUCCESS');
+                .setStyle(ButtonStyle.Success);
 
-            const pendingButton = new MessageButton()
+            const pendingButton = new ButtonBuilder()
                 .setCustomId('pendingButton')
                 .setLabel('Pending')
-                .setStyle('SECONDARY');
+                .setStyle(ButtonStyle.Secondary);
 
-            const rejectButton = new MessageButton()
+            const rejectButton = new ButtonBuilder()
                 .setCustomId('rejectButton')
                 .setLabel('Reject')
-                .setStyle('DANGER');
+                .setStyle(ButtonStyle.Danger);
 
-            const row = new MessageActionRow()
+            const row = new ActionRowBuilder()
                 .addComponents(acceptButton, pendingButton, rejectButton);
 
             if (applicationReviewChannelId) {
