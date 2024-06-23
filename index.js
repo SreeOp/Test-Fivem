@@ -1,5 +1,7 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes, REST } = require('discord.js');
+const fs = require('fs');
+const path = require('path');
 const token = process.env.TOKEN;
 const clientId = process.env.CLIENT_ID;
 const guildId = process.env.GUILD_ID;
@@ -18,6 +20,12 @@ const client = new Client({
 
 let applicationChannelId = null;
 let applicationReviewChannelId = null;
+
+// Load the saved application review channel ID
+const reviewChannelFilePath = path.resolve(__dirname, 'applicationReviewChannelId.txt');
+if (fs.existsSync(reviewChannelFilePath)) {
+    applicationReviewChannelId = fs.readFileSync(reviewChannelFilePath, 'utf8');
+}
 
 client.once('ready', () => {
     console.log('Bot is online!');
@@ -66,6 +74,7 @@ client.on('interactionCreate', async (interaction) => {
         console.log(`Application channel set to ${applicationChannelId}`);
     } else if (commandName === 'setsubmitted') {
         applicationReviewChannelId = interaction.channel.id;
+        fs.writeFileSync(reviewChannelFilePath, applicationReviewChannelId);
         await interaction.reply('This channel has been set for reviewing submitted applications.');
         console.log(`Application review channel set to ${applicationReviewChannelId}`);
     } else if (commandName === 'postapplication' && applicationChannelId) {
