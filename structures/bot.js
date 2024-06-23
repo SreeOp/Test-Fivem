@@ -2,17 +2,13 @@ require('dotenv').config();
 require("./handlers/keepAlive")();
 const config = require('./botconfig/config.json');
 const ee = require('./botconfig/embed.json');
-const {
-    Client,
-    Intents,
-} = require("discord.js");
+const { Client, Intents } = require("discord.js");
 const colors = require("colors");
 const Enmap = require("enmap");
 const libsodium = require("libsodium-wrappers");
 
 const client = new Client({
     fetchAllMembers: false,
-    // restTimeOffset: 0,
     shards: 'auto',
     allowedMentions: {
         parse: ["roles", "users", "everyone"],
@@ -37,26 +33,12 @@ const client = new Client({
         Intents.FLAGS.DIRECT_MESSAGE_TYPING
     ],
     presence: {
-        activities: [{
-            name: `ZX STORE`,
-            type: "WATCHING",
-        },
-        {
-            name: `MEMBERS`,
-            type: "WATCHING",
-        },
-        {
-             name: `CW SERVERS`,
-             type: "WATCHING",
-        },
-        {
-              name: `CW SERVERS`,
-              type: "WATCHING",
-        },
-        {
-            name: `NEW RESOURCES`,
-            type: "WATCHING",
-        }],
+        activities: [
+            { name: `ZX STORE`, type: "WATCHING" },
+            { name: `MEMBERS`, type: "WATCHING" },
+            { name: `CW SERVERS`, type: "WATCHING" },
+            { name: `NEW RESOURCES`, type: "WATCHING" }
+        ],
         status: "dnd"
     }
 });
@@ -70,21 +52,12 @@ require('events').defaultMaxListeners = 0;
 
 client.login(config.env.TOKEN || process.env.TOKEN);
 
-
-
-
-
-
-
 const { MessageActionRow, MessageButton } = require('discord.js');
 const { handleButtonInteraction } = require('./reactionRole');
 
-
-// Define constants for roleId and channelId
 const roleId = '1167156819412660274';
 const channelId = '1188156219173638187';
 
-// Event: Message Create
 client.on('messageCreate', async (message) => {
   if (message.channel.id === channelId && message.content.toLowerCase() === '!setupcwverify') {
     const row = new MessageActionRow()
@@ -117,22 +90,18 @@ client.on('messageCreate', async (message) => {
     };
 
     await message.channel.send({ content: '@everyone', components: [row], embeds: [welcomeEmbed] });
-  }
-  
-  else if (message.content.toLowerCase() === '!review') {
+  } else if (message.content.toLowerCase() === '!review') {
     const row = new MessageActionRow()
       .addComponents(
         new MessageButton()
           .setCustomId('review')
           .setLabel('FEEDBACK')
-          .setStyle('PRIMARY') // Update the style if needed
+          .setStyle('PRIMARY')
       );
 
-    await message.channel.send({ content: 'Click the button to post a feedback', components: [row]});
-  }
-
-  else if (message.content.toLowerCase() === '!addrole') {
-    const role = message.guild.roles.cache.get(`1167156819412660274`);
+    await message.channel.send({ content: 'Click the button to post a feedback', components: [row] });
+  } else if (message.content.toLowerCase() === '!addrole') {
+    const role = message.guild.roles.cache.get(roleId);
     const guild = message.guild;
     guild.members.cache.forEach(async (member) => {
       try {
@@ -146,14 +115,6 @@ client.on('messageCreate', async (message) => {
   }
 });
 
-
-
-
-
-
-
-
-
 /**********************************************************
  * @INFO
  * Bot Coded by Zedro#2742 | https://discord.gg/milanio
@@ -164,10 +125,6 @@ client.on('messageCreate', async (message) => {
  * @INFO
  *********************************************************/
 
-
-
-
-// Event: Interaction Create
 client.on('interactionCreate', async (interaction) => {
   if (interaction.isButton()) {
     await handleButtonInteraction(interaction, roleId);
