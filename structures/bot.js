@@ -104,7 +104,7 @@ client.on('messageCreate', async (message) => {
         icon_url: 'https://cdn.discordapp.com/attachments/1135964320883290205/1189549216788389938/hdzx.gif',
       },
       footer: {
-        text: 'powered by CW',
+        text: 'powered by ZyX',
         icon_url: 'https://media.discordapp.net/attachments/958054602622779473/1188930713823760435/CW.png',
       },
       timestamp: '2023-12-24T18:30:00.000Z',
