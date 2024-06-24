@@ -5,6 +5,9 @@ const path = require('path');
 const token = process.env.TOKEN;
 const clientId = process.env.CLIENT_ID;
 const guildId = process.env.GUILD_ID;
+const acceptedRoleId = process.env.ACCEPTED_ROLE_ID; // Role ID for accepted applications
+const pendingRoleId = process.env.PENDING_ROLE_ID; // Role ID for pending applications
+const rejectedRoleId = process.env.REJECTED_ROLE_ID; // Role ID for rejected applications
 
 const client = new Client({
     intents: [
@@ -162,26 +165,27 @@ client.on('interactionCreate', async (interaction) => {
                     .setTitle('Application Update')
                     .setDescription('Your application status: Accepted')
                     .setColor('#00ff00')
-                    .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667984b4&is=66783334&hm=0a486fb3dd9f322232f005efc1ebb1ce88e32eef1469278307d11a8c4aef7571&'); // Replace with your image URL
-                roleID = '1253347204601741342'; // Replace with your role ID for accepted applications
+                    .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192'); // Replace with your image URL
+                roleID = acceptedRoleId; // Assign accepted role
             } else if (interaction.customId === 'pendingButton') {
                 embed = new EmbedBuilder()
                     .setTitle('Application Update')
                     .setDescription('Your application status: Pending')
                     .setColor('#ffff00')
-                    .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667984b4&is=66783334&hm=0a486fb3dd9f322232f005efc1ebb1ce88e32eef1469278307d11a8c4aef7571&'); // Replace with your image URL
-                roleID = '1253347271718735882'; // Replace with your role ID for pending applications
+                    .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192'); // Replace with your image URL
+                roleID = pendingRoleId; // Assign pending role
             } else if (interaction.customId === 'rejectButton') {
                 embed = new EmbedBuilder()
                     .setTitle('Application Update')
                     .setDescription('Your application status: Rejected')
                     .setColor('#ff0000')
-                    .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667984b4&is=66783334&hm=0a486fb3dd9f322232f005efc1ebb1ce88e32eef1469278307d11a8c4aef7571&'); // Replace with your image URL
-                roleID = '1254774082445115432'; // Replace with your role ID for rejected applications
+                    .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192'); // Replace with your image URL
+                roleID = rejectedRoleId; // Assign rejected role
             }
 
             await member.roles.add(roleID);
             await member.send({ embeds: [embed] });
+
             await interaction.deferUpdate();
         } else {
             await interaction.reply('User not found.');
