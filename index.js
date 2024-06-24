@@ -154,38 +154,33 @@ client.on('interactionCreate', async (interaction) => {
         const member = interaction.guild.members.cache.find(member => member.user.tag === userTag);
 
         if (member) {
-            let embedMessage;
+            let embed;
+            const imageUrl = 'https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667a2d74&is=6678dbf4&hm=6213bc71f9d657d904a577e054f8d4d86e342df27350037fe63b78e8ce9dda7e&';
             if (interaction.customId === 'acceptButton') {
-                const role = interaction.guild.roles.cache.find(r => r.name === 'Whitelisted');
-                if (role) await member.roles.add(role);
-
-                embedMessage = new EmbedBuilder()
-                    .setTitle('Application Result')
-                    .setDescription('Your application has been **accepted**!')
+                embed = new EmbedBuilder()
+                    .setTitle('Application Update')
+                    .setDescription('Your application status: Accepted')
                     .setColor('#00ff00')
-                    .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667984b4&is=66783334&hm=0a486fb3dd9f322232f005efc1ebb1ce88e32eef1469278307d11a8c4aef7571&'); // Replace with your image URL
-
+                    .setImage(imageUrl);
+                const role = interaction.guild.roles.cache.find(r => r.name === 'Whitelisted');
+                if (role) member.roles.add(role);
             } else if (interaction.customId === 'pendingButton') {
-                embedMessage = new EmbedBuilder()
-                    .setTitle('Application Result')
-                    .setDescription('Your application is **pending**.')
+                embed = new EmbedBuilder()
+                    .setTitle('Application Update')
+                    .setDescription('Your application status: Pending')
                     .setColor('#ffff00')
-                    .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667984b4&is=66783334&hm=0a486fb3dd9f322232f005efc1ebb1ce88e32eef1469278307d11a8c4aef7571&'); // Replace with your image URL
-
+                    .setImage(imageUrl);
             } else if (interaction.customId === 'rejectButton') {
-                embedMessage = new EmbedBuilder()
-                    .setTitle('Application Result')
-                    .setDescription('Your application has been **rejected**.')
+                embed = new EmbedBuilder()
+                    .setTitle('Application Update')
+                    .setDescription('Your application status: Rejected')
                     .setColor('#ff0000')
-                    .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667984b4&is=66783334&hm=0a486fb3dd9f322232f005efc1ebb1ce88e32eef1469278307d11a8c4aef7571&'); // Replace with your image URL
+                    .setImage(imageUrl);
             }
-
-            if (embedMessage) {
-                await member.send({ embeds: [embedMessage] });
-            }
-            interaction.deferUpdate();
+            await member.send({ embeds: [embed] });
+            await interaction.deferUpdate();
         } else {
-            interaction.reply('User not found.');
+            await interaction.reply('User not found.');
         }
     }
 });
