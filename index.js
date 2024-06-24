@@ -21,10 +21,23 @@ const client = new Client({
 let applicationChannelId = null;
 let applicationReviewChannelId = null;
 
-// Load the saved application review channel ID
+let acceptRoleId = null;
+let pendingRoleId = null;
+let rejectRoleId = null;
+
+// Load the saved application review channel ID and role IDs
 const reviewChannelFilePath = path.resolve(__dirname, 'applicationReviewChannelId.txt');
+const rolesFilePath = path.resolve(__dirname, 'roles.json');
+
 if (fs.existsSync(reviewChannelFilePath)) {
     applicationReviewChannelId = fs.readFileSync(reviewChannelFilePath, 'utf8');
+}
+
+if (fs.existsSync(rolesFilePath)) {
+    const roles = JSON.parse(fs.readFileSync(rolesFilePath, 'utf8'));
+    acceptRoleId = roles.acceptRoleId;
+    pendingRoleId = roles.pendingRoleId;
+    rejectRoleId = roles.rejectRoleId;
 }
 
 client.once('ready', () => {
@@ -43,7 +56,43 @@ const commands = [
     {
         name: 'postapplication',
         description: 'Post the application embed message in the application channel',
-    }
+    },
+    {
+        name: 'setacceptrole',
+        description: 'Set the role for accepted applications',
+        options: [
+            {
+                name: 'role',
+                type: 'ROLE',
+                description: 'The role to assign for accepted applications',
+                required: true,
+            },
+        ],
+    },
+    {
+        name: 'setpendingrole',
+        description: 'Set the role for pending applications',
+        options: [
+            {
+                name: 'role',
+                type: 'ROLE',
+                description: 'The role to assign for pending applications',
+                required: true,
+            },
+        ],
+    },
+    {
+        name: 'setrejectrole',
+        description: 'Set the role for rejected applications',
+        options: [
+            {
+                name: 'role',
+                type: 'ROLE',
+                description: 'The role to assign for rejected applications',
+                required: true,
+            },
+        ],
+    },
 ];
 
 const rest = new REST({ version: '10' }).setToken(token);
@@ -66,7 +115,7 @@ const rest = new REST({ version: '10' }).setToken(token);
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isChatInputCommand()) return;
 
-    const { commandName } = interaction;
+    const { commandName, options } = interaction;
 
     if (commandName === 'setapplication') {
         applicationChannelId = interaction.channel.id;
@@ -100,6 +149,18 @@ client.on('interactionCreate', async (interaction) => {
         } else {
             await interaction.editReply('Application channel is not set.');
         }
+    } else if (commandName === 'setacceptrole') {
+        acceptRoleId = options.getRole('role').id;
+        await interaction.reply(`Role for accepted applications set to <@&${acceptRoleId}>.`);
+        saveRoles();
+    } else if (commandName === 'setpendingrole') {
+        pendingRoleId = options.getRole('role').id;
+        await interaction.reply(`Role for pending applications set to <@&${pendingRoleId}>.`);
+        saveRoles();
+    } else if (commandName === 'setrejectrole') {
+        rejectRoleId = options.getRole('role').id;
+        await interaction.reply(`Role for rejected applications set to <@&${rejectRoleId}>.`);
+        saveRoles();
     }
 });
 
@@ -120,69 +181,3 @@ client.on('interactionCreate', async (interaction) => {
                 .setColor('#00ff00');
 
             const acceptButton = new ButtonBuilder()
-                .setCustomId('acceptButton')
-                .setLabel('Accept')
-                .setStyle(ButtonStyle.Success);
-
-            const pendingButton = new ButtonBuilder()
-                .setCustomId('pendingButton')
-                .setLabel('Pending')
-                .setStyle(ButtonStyle.Secondary);
-
-            const rejectButton = new ButtonBuilder()
-                .setCustomId('rejectButton')
-                .setLabel('Reject')
-                .setStyle(ButtonStyle.Danger);
-
-            const row = new ActionRowBuilder()
-                .addComponents(acceptButton, pendingButton, rejectButton);
-
-            if (applicationReviewChannelId) {
-                const reviewChannel = client.channels.cache.get(applicationReviewChannelId);
-                if (reviewChannel) {
-                    await reviewChannel.send({ content: `<@${interaction.user.id}>`, embeds: [applicationEmbed], components: [row] });
-                    await m.reply('Your application has been submitted.');
-                } else {
-                    await m.reply('Application review channel is not set.');
-                }
-            } else {
-                await m.reply('Application review channel is not set.');
-            }
-        });
-    } else if (interaction.customId === 'acceptButton' || interaction.customId === 'pendingButton' || interaction.customId === 'rejectButton') {
-        const userTag = interaction.message.embeds[0].description.split(' ')[2];
-        const member = interaction.guild.members.cache.find(member => member.user.tag === userTag);
-
-        if (member) {
-            let embed;
-            const imageUrl = 'https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667a2d74&is=6678dbf4&hm=6213bc71f9d657d904a577e054f8d4d86e342df27350037fe63b78e8ce9dda7e&';
-            if (interaction.customId === 'acceptButton') {
-                embed = new EmbedBuilder()
-                    .setTitle('Application Update')
-                    .setDescription('Your application status: Accepted')
-                    .setColor('#00ff00')
-                    .setImage(imageUrl);
-                const role = interaction.guild.roles.cache.find(r => r.name === 'Whitelisted');
-                if (role) member.roles.add(role);
-            } else if (interaction.customId === 'pendingButton') {
-                embed = new EmbedBuilder()
-                    .setTitle('Application Update')
-                    .setDescription('Your application status: Pending')
-                    .setColor('#ffff00')
-                    .setImage(imageUrl);
-            } else if (interaction.customId === 'rejectButton') {
-                embed = new EmbedBuilder()
-                    .setTitle('Application Update')
-                    .setDescription('Your application status: Rejected')
-                    .setColor('#ff0000')
-                    .setImage(imageUrl);
-            }
-            await member.send({ embeds: [embed] });
-            await interaction.deferUpdate();
-        } else {
-            await interaction.reply('User not found.');
-        }
-    }
-});
-
-client.login(token);
