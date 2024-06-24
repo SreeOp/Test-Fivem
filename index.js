@@ -1,101 +1,151 @@
-const { Client, GatewayIntentBits, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
-const { token } = require('./config.json');
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+require('dotenv').config();
+const { Client, Intents, MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v9');
+
+const token = process.env.TOKEN;
+const clientId = process.env.CLIENT_ID;
+const guildId = process.env.GUILD_ID;
+
+const client = new Client({
+    intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.DIRECT_MESSAGES]
+});
 
 let submittedChannelId = null;
-let roleConfig = {
-  accepted: null,
-  pending: null,
-  rejected: null,
+let roles = {
+    accepted: null,
+    pending: null,
+    rejected: null
 };
 
-client.once('ready', () => {
-  console.log(`Logged in as ${client.user.tag}`);
-});
-
-client.on('interactionCreate', async interaction => {
-  if (!interaction.isCommand()) return;
-
-  const { commandName } = interaction;
-
-  if (commandName === 'setapplication') {
-    await interaction.reply('Application channel set!');
-  } else if (commandName === 'setsubmitted') {
-    submittedChannelId = interaction.channel.id;
-    await interaction.reply('Submitted channel set!');
-  } else if (commandName === 'setrole') {
-    const status = interaction.options.getString('status');
-    const role = interaction.options.getRole('role');
-    if (status && role) {
-      roleConfig[status] = role.id;
-      await interaction.reply(`Role for ${status} set to ${role.name}`);
-    } else {
-      await interaction.reply('Invalid status or role');
+const commands = [
+    {
+        name: 'setapplication',
+        description: 'Set the channel for whitelist applications'
+    },
+    {
+        name: 'setsubmitted',
+        description: 'Set the channel for submitted applications'
+    },
+    {
+        name: 'setrole',
+        description: 'Set roles for accepted, pending, and rejected applications',
+        options: [
+            {
+                name: 'accepted',
+                description: 'Role for accepted applications',
+                type: 'ROLE',
+                required: true
+            },
+            {
+                name: 'pending',
+                description: 'Role for pending applications',
+                type: 'ROLE',
+                required: true
+            },
+            {
+                name: 'rejected',
+                description: 'Role for rejected applications',
+                type: 'ROLE',
+                required: true
+            }
+        ]
+    },
+    {
+        name: 'postapplication',
+        description: 'Post the application form'
     }
-  } else if (commandName === 'postapplication') {
-    const row = new ActionRowBuilder()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId('apply')
-          .setLabel('Apply')
-          .setStyle(ButtonStyle.Primary),
-      );
+];
 
-    await interaction.reply({ content: 'Click the button to apply for the whitelist.', components: [row] });
-  }
+const rest = new REST({ version: '9' }).setToken(token);
+
+(async () => {
+    try {
+        await rest.put(
+            Routes.applicationGuildCommands(clientId, guildId),
+            { body: commands },
+        );
+        console.log('Successfully registered application commands.');
+    } catch (error) {
+        console.error(error);
+    }
+})();
+
+client.once('ready', () => {
+    console.log(`Logged in as ${client.user.tag}!`);
 });
 
 client.on('interactionCreate', async interaction => {
-  if (!interaction.isButton()) return;
+    if (!interaction.isCommand() && !interaction.isButton()) return;
 
-  if (interaction.customId === 'apply') {
-    const user = interaction.user;
+    if (interaction.isCommand()) {
+        if (interaction.commandName === 'setapplication') {
+            const channel = interaction.channel;
+            await channel.send({
+                content: 'Whitelist Application',
+                components: [
+                    new MessageActionRow().addComponents(
+                        new MessageButton()
+                            .setCustomId('apply')
+                            .setLabel('Apply')
+                            .setStyle('PRIMARY')
+                    )
+                ]
+            });
+            await interaction.reply('Application form has been set.');
+        }
 
-    // Embed message
-    const embed = new EmbedBuilder()
-      .setTitle('Whitelist Application')
-      .setDescription('Please fill out the following application:')
-      .addFields(
-        { name: 'Character Name', value: 'Your character name' },
-        { name: 'Character Gender', value: 'The gender of your character' },
-        { name: 'Real Name', value: 'Your real name' },
-        { name: 'Age', value: 'Your real age' },
-        { name: 'Roleplay Experience', value: 'Your role experience in months' },
-      )
-      .setFooter({ text: 'This form will be submitted to Unity Verse. Do not share passwords or other sensitive information.' });
+        if (interaction.commandName === 'setsubmitted') {
+            submittedChannelId = interaction.channelId;
+            await interaction.reply('Submitted applications channel has been set.');
+        }
 
-    await user.send({ embeds: [embed] });
-    await interaction.reply({ content: 'Application form sent to your DMs!', ephemeral: true });
-  }
-});
+        if (interaction.commandName === 'setrole') {
+            roles.accepted = interaction.options.getRole('accepted').id;
+            roles.pending = interaction.options.getRole('pending').id;
+            roles.rejected = interaction.options.getRole('rejected').id;
+            await interaction.reply('Roles have been set.');
+        }
 
-client.on('interactionCreate', async interaction => {
-  if (!interaction.isButton()) return;
+        if (interaction.commandName === 'postapplication') {
+            if (!submittedChannelId) {
+                await interaction.reply('Submitted channel is not set. Use /setsubmitted command first.');
+                return;
+            }
 
-  const userId = interaction.customId.split('-')[1];
-  const user = await client.users.fetch(userId);
+            const embed = new MessageEmbed()
+                .setTitle('Whitelist Application')
+                .setDescription('Click the button below to apply for whitelist.')
+                .setColor('#00FF00');
 
-  if (!user) {
-    await interaction.reply('User not found.');
-    return;
-  }
+            await interaction.channel.send({
+                embeds: [embed],
+                components: [
+                    new MessageActionRow().addComponents(
+                        new MessageButton()
+                            .setCustomId('apply')
+                            .setLabel('Apply')
+                            .setStyle('PRIMARY')
+                    )
+                ]
+            });
 
-  const status = interaction.customId.split('-')[0];
-  const role = roleConfig[status];
+            await interaction.reply('Application form has been posted.');
+        }
+    }
 
-  if (role) {
-    const guild = interaction.guild;
-    const member = await guild.members.fetch(userId);
-    await member.roles.add(role);
-  }
+    if (interaction.isButton()) {
+        if (interaction.customId === 'apply') {
+            const modalEmbed = new MessageEmbed()
+                .setTitle('Whitelist Application')
+                .setDescription('Please fill out the following details.')
+                .addField('Character Name', 'Your character name')
+                .addField('Character Gender', 'The gender of your character')
+                .addField('Real Name', 'Your real name')
+                .addField('Age', 'Your real age')
+                .addField('Roleplay Experience', 'Your role experience in months')
+                .setColor('#0000FF')
+                .setFooter('This form will be submitted to Unity Verse. Do not share passwords or other sensitive information.');
 
-  const embed = new EmbedBuilder()
-    .setTitle(`Application ${status.charAt(0).toUpperCase() + status.slice(1)}`)
-    .setDescription(`Your application status is now ${status}.`)
-    .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667a2d74&is=6678dbf4&hm=6213bc71f9d657d904a577e054f8d4d86e342df27350037fe63b78e8ce9dda7e');
-
-  await user.send({ embeds: [embed] });
-  await interaction.deferUpdate();
-});
-
-client.login(token);
+            await interaction.user.send({ embeds: [modalEmbed] });
+            await interaction.reply({ content: 'Please check your DMs for the application form.', ephemeral: true });
