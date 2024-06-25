@@ -1,5 +1,5 @@
 // functions/sendApplicationUpdate.js
-const { EmbedBuilder } = require('discord.js');
+const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
 
 module.exports = async function sendApplicationUpdate(interaction, member, client, action, acceptedChannelId, pendingChannelId, rejectedChannelId) {
     let embed;
@@ -7,7 +7,7 @@ module.exports = async function sendApplicationUpdate(interaction, member, clien
     let channelID;
 
     if (action === 'acceptButton') {
-        embed = new EmbedBuilder()
+        embed = new MessageEmbed()
             .setTitle('Application Update')
             .setDescription('Your application status: Accepted')
             .setColor('#00ff00')
@@ -15,7 +15,7 @@ module.exports = async function sendApplicationUpdate(interaction, member, clien
         roleID = '1253347204601741342'; // Replace with your role ID for accepted applications
         channelID = acceptedChannelId; // Channel ID for accepted applications
     } else if (action === 'pendingButton') {
-        embed = new EmbedBuilder()
+        embed = new MessageEmbed()
             .setTitle('Application Update')
             .setDescription('Your application status: Pending')
             .setColor('#ffff00')
@@ -23,7 +23,7 @@ module.exports = async function sendApplicationUpdate(interaction, member, clien
         roleID = '1253347728955361412'; // Replace with your role ID for pending applications
         channelID = pendingChannelId; // Channel ID for pending applications
     } else if (action === 'rejectButton') {
-        embed = new EmbedBuilder()
+        embed = new MessageEmbed()
             .setTitle('Application Update')
             .setDescription('Your application status: Rejected')
             .setColor('#ff0000')
@@ -39,11 +39,14 @@ module.exports = async function sendApplicationUpdate(interaction, member, clien
             await member.roles.add(role);
         }
 
-        const updateEmbed = EmbedBuilder.from(interaction.message.embeds[0]);
-        updateEmbed.setFooter({ text: `Status: ${embed.data.description}` })
-            .setColor(embed.data.color);
+        const updateEmbed = new MessageEmbed()
+            .setTitle(embed.title)
+            .setDescription(embed.description)
+            .setColor(embed.color)
+            .setImage(embed.image.url); // Maintain original image URL
 
-        await interaction.update({ embeds: [updateEmbed], components: [] });
+        await interaction.editReply({ embeds: [updateEmbed], components: [] }); // Clear components array to keep buttons visible
+
         const channel = client.channels.cache.get(channelID);
         if (channel) {
             await channel.send({ embeds: [embed], content: `<@${member.user.id}>` });
