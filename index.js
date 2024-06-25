@@ -9,7 +9,7 @@ const acceptedChannelId = process.env.ACCEPTED_CHANNEL_ID; // Channel ID for acc
 const pendingChannelId = process.env.PENDING_CHANNEL_ID; // Channel ID for pending applications
 const rejectedChannelId = process.env.REJECTED_CHANNEL_ID; // Channel ID for rejected applications
 
-const applicationReviewChannelId = 'YOUR_REVIEW_CHANNEL_ID'; // Set your review channel ID here
+const applicationReviewChannelId = '1254417883312947372'; // Set your review channel ID here
 
 const client = new Client({
     intents: [
