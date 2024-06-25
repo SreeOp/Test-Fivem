@@ -9,8 +9,6 @@ const acceptedChannelId = process.env.ACCEPTED_CHANNEL_ID; // Channel ID for acc
 const pendingChannelId = process.env.PENDING_CHANNEL_ID; // Channel ID for pending applications
 const rejectedChannelId = process.env.REJECTED_CHANNEL_ID; // Channel ID for rejected applications
 
-const applicationReviewChannelId = '1255162116126539786'; // Set your review channel ID here
-
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -24,6 +22,13 @@ const client = new Client({
 });
 
 let applicationChannelId = null;
+let applicationReviewChannelId = null;
+
+// Load the saved application review channel ID
+const reviewChannelFilePath = path.resolve(__dirname, 'applicationReviewChannelId.txt');
+if (fs.existsSync(reviewChannelFilePath)) {
+    applicationReviewChannelId = fs.readFileSync(reviewChannelFilePath, 'utf8');
+}
 
 client.once('ready', () => {
     console.log('Bot is online!');
@@ -33,6 +38,10 @@ const commands = [
     {
         name: 'setapplication',
         description: 'Set the channel for whitelist applications',
+    },
+    {
+        name: 'setsubmitted',
+        description: 'Set the channel for reviewing submitted applications',
     },
     {
         name: 'postapplication',
@@ -65,6 +74,11 @@ client.on('interactionCreate', async (interaction) => {
             applicationChannelId = interaction.channel.id;
             await interaction.reply('This channel has been set for whitelist applications.');
             console.log(`Application channel set to ${applicationChannelId}`);
+        } else if (commandName === 'setsubmitted') {
+            applicationReviewChannelId = interaction.channel.id;
+            fs.writeFileSync(reviewChannelFilePath, applicationReviewChannelId);
+            await interaction.reply('This channel has been set for reviewing submitted applications.');
+            console.log(`Application review channel set to ${applicationReviewChannelId}`);
         } else if (commandName === 'postapplication' && applicationChannelId) {
             await interaction.deferReply({ ephemeral: true });
 
@@ -221,9 +235,11 @@ client.on('interactionCreate', async (interaction) => {
             const row = new ActionRowBuilder()
                 .addComponents(acceptButton, pendingButton, rejectButton);
 
-            const channel = client.channels.cache.get(applicationReviewChannelId);
-            if (channel) {
-                await channel.send({ embeds: [embed], components: [row] });
+            if (applicationReviewChannelId) {
+                const channel = client.channels.cache.get(applicationReviewChannelId);
+                if (channel) {
+                    await channel.send({ embeds: [embed], components: [row] });
+                }
             }
 
             await interaction.reply({ content: 'Application submitted successfully!', ephemeral: true });
