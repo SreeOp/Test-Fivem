@@ -18,16 +18,19 @@ client.once('ready', () => {
     setCommands(clientId, guildId, token);
 
     // Set presence (activities and status)
-    client.user.setPresence({
-        activities: [
-            { name: 'ZyroniX', type: 'WATCHING' },
-            { name: 'MEMBERS', type: 'WATCHING' },
-            { name: 'ZYX SERVERS', type: 'WATCHING' },
-            { name: 'NEW RESOURCES', type: 'WATCHING' }
-        ],
-        status: 'dnd' // dnd = Do Not Disturb
-    })
-    .catch(console.error); // Log any errors while setting presence
+    try {
+        client.user.setPresence({
+            activities: [
+                { name: 'ZX STORE', type: 'WATCHING' },
+                { name: 'MEMBERS', type: 'WATCHING' },
+                { name: 'CW SERVERS', type: 'WATCHING' },
+                { name: 'NEW RESOURCES', type: 'WATCHING' }
+            ],
+            status: 'dnd' // dnd = Do Not Disturb
+        });
+    } catch (error) {
+        console.error('Error setting presence:', error);
+    }
 });
 
 let applicationChannelId = null;
