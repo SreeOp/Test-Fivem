@@ -1,8 +1,7 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes, REST } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes, REST, TextInputBuilder, ModalBuilder, TextInputStyle } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-
 const token = process.env.TOKEN;
 const clientId = process.env.CLIENT_ID;
 const guildId = process.env.GUILD_ID;
@@ -68,7 +67,7 @@ const rest = new REST({ version: '10' }).setToken(token);
 })();
 
 client.on('interactionCreate', async (interaction) => {
-    if (interaction.isCommand()) {
+    if (interaction.isChatInputCommand()) {
         const { commandName } = interaction;
 
         if (commandName === 'setapplication') {
@@ -81,6 +80,8 @@ client.on('interactionCreate', async (interaction) => {
             await interaction.reply('This channel has been set for reviewing submitted applications.');
             console.log(`Application review channel set to ${applicationReviewChannelId}`);
         } else if (commandName === 'postapplication' && applicationChannelId) {
+            await interaction.deferReply({ ephemeral: true });
+
             const embed = new EmbedBuilder()
                 .setTitle('Whitelist Application')
                 .setDescription('Click the button below to apply for the whitelist.')
@@ -97,64 +98,56 @@ client.on('interactionCreate', async (interaction) => {
             const channel = client.channels.cache.get(applicationChannelId);
             if (channel) {
                 await channel.send({ embeds: [embed], components: [row] });
-                await interaction.reply('Application posted in the application channel.');
+                await interaction.deleteReply();
             } else {
-                await interaction.reply('Application channel is not set.');
+                await interaction.editReply('Application channel is not set.');
             }
         }
     } else if (interaction.isButton()) {
         if (interaction.customId === 'applyButton') {
-            await interaction.deferReply({ ephemeral: true });
-            await interaction.editReply('Please fill out the application form.');
+            const modal = new ModalBuilder()
+                .setCustomId('applicationModal')
+                .setTitle('Whitelist Application');
 
-            const filter = m => m.author.id === interaction.user.id;
-            const collector = interaction.channel.createMessageCollector({ filter, time: 60000, max: 1 });
+            const characterNameInput = new TextInputBuilder()
+                .setCustomId('characterName')
+                .setLabel('Character Name')
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true);
 
-            collector.on('collect', async m => {
-                const applicationEmbed = new EmbedBuilder()
-                    .setTitle('New Whitelist Application')
-                    .setDescription(`Application from ${interaction.user.tag}`)
-                    .addFields([{ name: 'Application Content', value: m.content }])
-                    .setColor('#00ff00');
+            const characterGenderInput = new TextInputBuilder()
+                .setCustomId('characterGender')
+                .setLabel('Character Gender')
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true);
 
-                const acceptButton = new ButtonBuilder()
-                    .setCustomId('acceptButton')
-                    .setLabel('Accept')
-                    .setStyle(ButtonStyle.Success);
+            const realNameInput = new TextInputBuilder()
+                .setCustomId('realName')
+                .setLabel('Real Name')
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true);
 
-                const pendingButton = new ButtonBuilder()
-                    .setCustomId('pendingButton')
-                    .setLabel('Pending')
-                    .setStyle(ButtonStyle.Secondary);
+            const ageInput = new TextInputBuilder()
+                .setCustomId('age')
+                .setLabel('Age')
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true);
 
-                const rejectButton = new ButtonBuilder()
-                    .setCustomId('rejectButton')
-                    .setLabel('Reject')
-                    .setStyle(ButtonStyle.Danger);
+            const experienceInput = new TextInputBuilder()
+                .setCustomId('experience')
+                .setLabel('Roleplay Experience')
+                .setStyle(TextInputStyle.Paragraph)
+                .setRequired(true);
 
-                const row = new ActionRowBuilder()
-                    .addComponents(acceptButton, pendingButton, rejectButton);
+            const row1 = new ActionRowBuilder().addComponents(characterNameInput);
+            const row2 = new ActionRowBuilder().addComponents(characterGenderInput);
+            const row3 = new ActionRowBuilder().addComponents(realNameInput);
+            const row4 = new ActionRowBuilder().addComponents(ageInput);
+            const row5 = new ActionRowBuilder().addComponents(experienceInput);
 
-                if (applicationReviewChannelId) {
-                    const reviewChannel = client.channels.cache.get(applicationReviewChannelId);
-                    if (reviewChannel) {
-                        await reviewChannel.send({ content: `<@${interaction.user.id}>`, embeds: [applicationEmbed], components: [row] });
-                        await interaction.editReply('Your application has been submitted.');
-                    } else {
-                        console.error('Application review channel is not set.');
-                        await interaction.editReply('An error occurred. Please try again later.');
-                    }
-                } else {
-                    console.error('Application review channel is not set.');
-                    await interaction.editReply('An error occurred. Please try again later.');
-                }
-            });
+            modal.addComponents(row1, row2, row3, row4, row5);
 
-            collector.on('end', collected => {
-                if (collected.size === 0) {
-                    interaction.editReply('No application form submitted within the time limit.');
-                }
-            });
+            await interaction.showModal(modal);
         } else if (interaction.customId === 'acceptButton' || interaction.customId === 'pendingButton' || interaction.customId === 'rejectButton') {
             const userTag = interaction.message.embeds[0].description.split(' ')[2];
             const member = interaction.guild.members.cache.find(member => member.user.tag === userTag);
@@ -193,16 +186,63 @@ client.on('interactionCreate', async (interaction) => {
                 await member.roles.add(roleID);
                 await member.send({ embeds: [embed] });
 
-                const statusChannel = client.channels.cache.get(channelID);
-                if (statusChannel) {
-                    await statusChannel.send({ content: `<@${member.id}>`, embeds: [embed] });
-                } else {
-                    console.error(`Status channel with ID ${channelID} not found.`);
-                }
+                const updateEmbed = new EmbedBuilder()
+                    .setTitle('Application Status Updated')
+                    .setDescription(`The application for ${member.user.tag} has been updated.`)
+                    .setColor(embed.color);
+
+                await client.channels.cache.get(channelID).send({ embeds: [updateEmbed] });
+                await interaction.reply({ content: 'Application status updated and user notified.', ephemeral: true });
             } else {
-                console.error('User not found.');
-                await interaction.reply('User not found.');
+                await interaction.reply({ content: 'User not found.', ephemeral: true });
             }
+        }
+    } else if (interaction.isModalSubmit()) {
+        if (interaction.customId === 'applicationModal') {
+            const characterName = interaction.fields.getTextInputValue('characterName');
+            const characterGender = interaction.fields.getTextInputValue('characterGender');
+            const realName = interaction.fields.getTextInputValue('realName');
+            const age = interaction.fields.getTextInputValue('age');
+            const experience = interaction.fields.getTextInputValue('experience');
+
+            const embed = new EmbedBuilder()
+                .setTitle('New Whitelist Application')
+                .setDescription(`Submitted by: ${interaction.user.tag}`)
+                .addFields(
+                    { name: 'Character Name', value: characterName, inline: true },
+                    { name: 'Character Gender', value: characterGender, inline: true },
+                    { name: 'Real Name', value: realName, inline: true },
+                    { name: 'Age', value: age, inline: true },
+                    { name: 'Roleplay Experience', value: experience, inline: true }
+                )
+                .setColor('#00ff00');
+
+            const acceptButton = new ButtonBuilder()
+                .setCustomId('acceptButton')
+                .setLabel('Accept')
+                .setStyle(ButtonStyle.Success);
+
+            const pendingButton = new ButtonBuilder()
+                .setCustomId('pendingButton')
+                .setLabel('Pending')
+                .setStyle(ButtonStyle.Secondary);
+
+            const rejectButton = new ButtonBuilder()
+                .setCustomId('rejectButton')
+                .setLabel('Reject')
+                .setStyle(ButtonStyle.Danger);
+
+            const row = new ActionRowBuilder()
+                .addComponents(acceptButton, pendingButton, rejectButton);
+
+            if (applicationReviewChannelId) {
+                const channel = client.channels.cache.get(applicationReviewChannelId);
+                if (channel) {
+                    await channel.send({ embeds: [embed], components: [row] });
+                }
+            }
+
+            await interaction.reply({ content: 'Application submitted successfully!', ephemeral: true });
         }
     }
 });
