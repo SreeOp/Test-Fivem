@@ -1,6 +1,5 @@
-// index.js
 require('dotenv').config();
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 const express = require('express');
 const setCommands = require('./functions/setCommands');
 const handleInteractions = require('./functions/handleInteractions');
@@ -17,6 +16,9 @@ client.once('ready', () => {
 
     // Set the slash commands
     setCommands(clientId, guildId, token);
+
+    // Set bot status
+    client.user.setActivity('ZyX', { type: 'WATCHING' });
 });
 
 let applicationChannelId = null;
