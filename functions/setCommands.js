@@ -1,6 +1,5 @@
 // functions/setCommands.js
-const { REST } = require('discord.js');
-const { Routes } = require('discord-api-types/v9');
+const { REST, Routes } = require('discord.js');
 
 module.exports = async function setCommands(clientId, guildId, token) {
     const commands = [
@@ -14,7 +13,7 @@ module.exports = async function setCommands(clientId, guildId, token) {
         }
     ];
 
-    const rest = new REST({ version: '9' }).setToken(token);
+    const rest = new REST({ version: '10' }).setToken(token);
 
     try {
         console.log('Started refreshing application (/) commands.');
