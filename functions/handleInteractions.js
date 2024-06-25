@@ -78,6 +78,7 @@ module.exports = async function handleInteractions(client, interaction, applicat
 
             modal.addComponents(row1, row2, row3, row4, row5);
 
+            await interaction.update({ components: [] }); // Clear existing buttons
             await interaction.showModal(modal);
         } else if (interaction.customId === 'acceptButton' || interaction.customId === 'pendingButton' || interaction.customId === 'rejectButton') {
             const userTag = interaction.message.embeds[0].description.split(' ')[2];
