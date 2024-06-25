@@ -17,8 +17,16 @@ client.once('ready', () => {
     // Set the slash commands
     setCommands(clientId, guildId, token);
 
-    // Set bot status
-    client.user.setActivity('ZyX', { type: 'WATCHING' });
+    // Set presence (activities and status)
+    client.user.setPresence({
+        activities: [
+            { name: 'ZyroniX', type: 'WATCHING' },
+            { name: 'MEMBERS', type: 'WATCHING' },
+            { name: 'ZYX SERVERS', type: 'WATCHING' },
+            { name: 'NEW RESOURCES', type: 'WATCHING' }
+        ],
+        status: 'dnd' // dnd = Do Not Disturb
+    });
 });
 
 let applicationChannelId = null;
