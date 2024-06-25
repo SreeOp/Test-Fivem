@@ -1,5 +1,6 @@
+// index.js
 require('dotenv').config();
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const express = require('express');
 const setCommands = require('./functions/setCommands');
 const handleInteractions = require('./functions/handleInteractions');
@@ -16,21 +17,6 @@ client.once('ready', () => {
 
     // Set the slash commands
     setCommands(clientId, guildId, token);
-
-    // Set presence (activities and status)
-    try {
-        client.user.setPresence({
-            activities: [
-                { name: 'ZX STORE', type: 'WATCHING' },
-                { name: 'MEMBERS', type: 'WATCHING' },
-                { name: 'CW SERVERS', type: 'WATCHING' },
-                { name: 'NEW RESOURCES', type: 'WATCHING' }
-            ],
-            status: 'dnd' // dnd = Do Not Disturb
-        });
-    } catch (error) {
-        console.error('Error setting presence:', error);
-    }
 });
 
 let applicationChannelId = null;
