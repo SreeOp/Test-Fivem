@@ -174,12 +174,6 @@ client.on('interactionCreate', async (interaction) => {
                 await member.roles.add(roleID);
                 await member.send({ embeds: [embed] });
 
-                const updateEmbed = new EmbedBuilder()
-                    .setTitle('Application Status Updated')
-                    .setDescription(`The application for ${member.user.tag} has been updated.`)
-                    .setColor(embed.data.color);
-
-                await interaction.update({ embeds: [updateEmbed], components: [] });
                 const channel = client.channels.cache.get(channelID);
                 if (channel) {
                     await channel.send({ content: `<@${member.user.id}>`, embeds: [embed] }); // Mention the user in the channel
