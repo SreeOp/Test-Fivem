@@ -1,7 +1,9 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes, REST, TextInputBuilder, ModalBuilder, TextInputStyle } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3000; // Set the port from environment variables or default to 3000
+
 const token = process.env.TOKEN;
 const clientId = process.env.CLIENT_ID;
 const guildId = process.env.GUILD_ID;
@@ -175,12 +177,13 @@ client.on('interactionCreate', async (interaction) => {
                 const updateEmbed = new EmbedBuilder()
                     .setTitle('Application Status Updated')
                     .setDescription(`The application for ${member.user.tag} has been updated.`)
-                    .setColor(embed.color);
+                    .setColor(embed.data.color);
 
-                await client.channels.cache.get(channelID).send({ embeds: [updateEmbed] });
-                await interaction.reply({ content: 'Application status updated and user notified.', ephemeral: true });
-            } else {
-                await interaction.reply({ content: 'User not found.', ephemeral: true });
+                await interaction.update({ embeds: [updateEmbed], components: [] });
+                const channel = client.channels.cache.get(channelID);
+                if (channel) {
+                    await channel.send({ embeds: [embed] });
+                }
             }
         }
     } else if (interaction.isModalSubmit()) {
@@ -232,3 +235,12 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.login(token);
+
+// Set up an Express server
+app.get('/', (req, res) => {
+    res.send('Hello, this is your Discord bot running.');
+});
+
+app.listen(port, () => {
+    console.log(`Express server listening on port ${port}`);
+});
