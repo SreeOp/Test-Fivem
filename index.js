@@ -2,6 +2,7 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes, REST, TextInputBuilder, ModalBuilder, TextInputStyle } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+
 const token = process.env.TOKEN;
 const clientId = process.env.CLIENT_ID;
 const guildId = process.env.GUILD_ID;
@@ -198,51 +199,41 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
     } else if (interaction.isModalSubmit()) {
-        if (interaction.customId === 'applicationModal') {
-            const characterName = interaction.fields.getTextInputValue('characterName');
-            const characterGender = interaction.fields.getTextInputValue('characterGender');
-            const realName = interaction.fields.getTextInputValue('realName');
-            const age = interaction.fields.getTextInputValue('age');
-            const experience = interaction.fields.getTextInputValue('experience');
+        const characterName = interaction.values.find(value => value.id === 'characterName').value;
+        const characterGender = interaction.values.find(value => value.id === 'characterGender').value;
+        const realName = interaction.values.find(value => value.id === 'realName').value;
+        const age = interaction.values.find(value => value.id === 'age').value;
+        const experience = interaction.values.find(value => value.id === 'experience').value;
 
-            const embed = new EmbedBuilder()
-                .setTitle('New Whitelist Application')
-                .setDescription(`Submitted by: ${interaction.user.tag}`)
-                .addFields(
-                    { name: 'Character Name', value: characterName, inline: true },
-                    { name: 'Character Gender', value: characterGender, inline: true },
-                    { name: 'Real Name', value: realName, inline: true },
-                    { name: 'Age', value: age, inline: true },
-                    { name: 'Roleplay Experience', value: experience, inline: true }
-                )
-                .setColor('#00ff00');
+        const applicationEmbed = new EmbedBuilder()
+            .setTitle('New Whitelist Application')
+            .setDescription(`**User:** ${interaction.user.tag}\n\n**Character Name:** ${characterName}\n**Character Gender:** ${characterGender}\n**Real Name:** ${realName}\n**Age:** ${age}\n**Roleplay Experience:** ${experience}`)
+            .setColor('#7289DA');
 
-            const acceptButton = new ButtonBuilder()
-                .setCustomId('acceptButton')
-                .setLabel('Accept')
-                .setStyle(ButtonStyle.Success);
+        const acceptButton = new ButtonBuilder()
+            .setCustomId('acceptButton')
+            .setLabel('Accept')
+            .setStyle(ButtonStyle.Success);
 
-            const pendingButton = new ButtonBuilder()
-                .setCustomId('pendingButton')
-                .setLabel('Pending')
-                .setStyle(ButtonStyle.Secondary);
+        const pendingButton = new ButtonBuilder()
+            .setCustomId('pendingButton')
+            .setLabel('Pending')
+            .setStyle(ButtonStyle.Primary);
 
-            const rejectButton = new ButtonBuilder()
-                .setCustomId('rejectButton')
-                .setLabel('Reject')
-                .setStyle(ButtonStyle.Danger);
+        const rejectButton = new ButtonBuilder()
+            .setCustomId('rejectButton')
+            .setLabel('Reject')
+            .setStyle(ButtonStyle.Danger);
 
-            const row = new ActionRowBuilder()
-                .addComponents(acceptButton, pendingButton, rejectButton);
+        const row = new ActionRowBuilder()
+            .addComponents(acceptButton, pendingButton, rejectButton);
 
-            if (applicationReviewChannelId) {
-                const channel = client.channels.cache.get(applicationReviewChannelId);
-                if (channel) {
-                    await channel.send({ embeds: [embed], components: [row] });
-                }
-            }
-
+        const channel = client.channels.cache.get(applicationReviewChannelId);
+        if (channel) {
+            await channel.send({ embeds: [applicationEmbed], components: [row] });
             await interaction.reply({ content: 'Application submitted successfully!', ephemeral: true });
+        } else {
+            await interaction.reply({ content: 'Application review channel is not set.', ephemeral: true });
         }
     }
 });
