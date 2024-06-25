@@ -26,7 +26,8 @@ client.once('ready', () => {
             { name: 'NEW RESOURCES', type: 'WATCHING' }
         ],
         status: 'dnd' // dnd = Do Not Disturb
-    });
+    })
+    .catch(console.error); // Log any errors while setting presence
 });
 
 let applicationChannelId = null;
