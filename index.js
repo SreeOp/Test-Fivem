@@ -1,5 +1,6 @@
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, REST, TextInputBuilder, ModalBuilder, TextInputStyle } = require('discord.js');
 const express = require('express');
+const { Routes } = require('discord-api-types/v9');
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -63,7 +64,7 @@ client.on('interactionCreate', async (interaction) => {
             const { commandName } = interaction;
 
             if (commandName === 'setapplication') {
-                applicationChannelId = interaction.channel.id;
+                applicationChannelId = interaction.channelId;
                 await interaction.reply('This channel has been set for whitelist applications.');
                 console.log(`Application channel set to ${applicationChannelId}`);
             } else if (commandName === 'postapplication' && applicationChannelId) {
@@ -134,11 +135,8 @@ client.on('interactionCreate', async (interaction) => {
 
                 modal.addComponents(row1, row2, row3, row4, row5);
 
-                await interaction.deferReply({ ephemeral: true });
                 await interaction.showModal(modal);
             } else if (interaction.customId === 'acceptButton' || interaction.customId === 'pendingButton' || interaction.customId === 'rejectButton') {
-                await interaction.deferReply({ ephemeral: false });
-
                 const userTag = interaction.message.embeds[0].description.split(' ')[2];
                 const member = interaction.guild.members.cache.find(member => member.user.tag === userTag);
 
@@ -146,35 +144,31 @@ client.on('interactionCreate', async (interaction) => {
                     let embed;
                     let roleID;
                     let channelID;
-                    let status;
 
                     if (interaction.customId === 'acceptButton') {
                         embed = new EmbedBuilder()
                             .setTitle('Application Update')
-                            .setDescription(`${member.user.toString()}, your application status: Accepted`)
+                            .setDescription('Your application status: Accepted')
                             .setColor('#00ff00')
                             .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192');
                         roleID = '1253347204601741342';
                         channelID = acceptedChannelId;
-                        status = 'Accepted';
                     } else if (interaction.customId === 'pendingButton') {
                         embed = new EmbedBuilder()
                             .setTitle('Application Update')
-                            .setDescription(`${member.user.toString()}, your application status: Pending`)
+                            .setDescription('Your application status: Pending')
                             .setColor('#ffff00')
                             .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192');
                         roleID = '1253347271718735882';
                         channelID = pendingChannelId;
-                        status = 'Pending';
                     } else if (interaction.customId === 'rejectButton') {
                         embed = new EmbedBuilder()
                             .setTitle('Application Update')
-                            .setDescription(`${member.user.toString()}, your application status: Rejected`)
+                            .setDescription('Your application status: Rejected')
                             .setColor('#ff0000')
                             .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192');
                         roleID = '1254774082445115432';
                         channelID = rejectedChannelId;
-                        status = 'Rejected';
                     }
 
                     await member.roles.add(roleID);
@@ -182,13 +176,14 @@ client.on('interactionCreate', async (interaction) => {
 
                     const updateEmbed = new EmbedBuilder()
                         .setTitle('Application Status Updated')
-                        .setDescription(`The application for ${member.user.toString()} has been updated.`)
+                        .setDescription(`The application for ${member.user.tag} has been updated.`)
                         .setColor(embed.data.color);
 
-                    await interaction.editReply({ content: 'Interaction completed successfully.', ephemeral: true });
+                    await interaction.update({ embeds: [updateEmbed], components: [] });
+
                     const channel = client.channels.cache.get(channelID);
                     if (channel) {
-                        await channel.send({ content: member.toString(), embeds: [embed] });
+                        await channel.send({ embeds: [embed] });
                     }
                 }
             }
@@ -220,7 +215,7 @@ client.on('interactionCreate', async (interaction) => {
                 const pendingButton = new ButtonBuilder()
                     .setCustomId('pendingButton')
                     .setLabel('Pending')
-                    .setStyle(ButtonStyle.Secondary);
+                    .setStyle(ButtonStyle.Primary);
 
                 const rejectButton = new ButtonBuilder()
                     .setCustomId('rejectButton')
@@ -230,12 +225,12 @@ client.on('interactionCreate', async (interaction) => {
                 const row = new ActionRowBuilder()
                     .addComponents(acceptButton, pendingButton, rejectButton);
 
-                const channel = client.channels.cache.get(reviewChannelId);
-                if (channel) {
-                    await channel.send({ content: interaction.user.toString(), embeds: [embed], components: [row] });
+                const reviewChannel = client.channels.cache.get(reviewChannelId);
+                if (reviewChannel) {
+                    await reviewChannel.send({ embeds: [embed], components: [row] });
                 }
 
-                await interaction.reply({ content: 'Application submitted successfully!', ephemeral: true });
+                await interaction.reply({ content: 'Your application has been submitted for review.', ephemeral: true });
             }
         }
     } catch (error) {
@@ -245,11 +240,6 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.login(token);
-
-// Express server setup
-app.get('/', (req, res) => {
-    res.send('Discord bot is running.');
-});
 
 app.listen(port, () => {
     console.log(`Express server listening on port ${port}`);
