@@ -1,15 +1,15 @@
-const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes, REST, TextInputBuilder, ModalBuilder, TextInputStyle } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, REST, TextInputBuilder, ModalBuilder, TextInputStyle } = require('discord.js');
 const express = require('express');
 const app = express();
-const port = process.env.PORT || 3000; // Set the port from environment variables or default to 3000
+const port = process.env.PORT || 3000;
 
 const token = process.env.TOKEN;
 const clientId = process.env.CLIENT_ID;
 const guildId = process.env.GUILD_ID;
-const acceptedChannelId = process.env.ACCEPTED_CHANNEL_ID; // Channel ID for accepted applications
-const pendingChannelId = process.env.PENDING_CHANNEL_ID; // Channel ID for pending applications
-const rejectedChannelId = process.env.REJECTED_CHANNEL_ID; // Channel ID for rejected applications
-const reviewChannelId = process.env.REVIEW_CHANNEL_ID; // Channel ID for application review
+const acceptedChannelId = process.env.ACCEPTED_CHANNEL_ID;
+const pendingChannelId = process.env.PENDING_CHANNEL_ID;
+const rejectedChannelId = process.env.REJECTED_CHANNEL_ID;
+const reviewChannelId = process.env.REVIEW_CHANNEL_ID;
 
 const client = new Client({
     intents: [
@@ -153,27 +153,27 @@ client.on('interactionCreate', async (interaction) => {
                             .setTitle('Application Update')
                             .setDescription(`${member.user.toString()}, your application status: Accepted`)
                             .setColor('#00ff00')
-                            .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192'); // Replace with your image URL
-                        roleID = '1253347204601741342'; // Replace with your role ID for accepted applications
-                        channelID = acceptedChannelId; // Channel ID for accepted applications
+                            .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192');
+                        roleID = '1253347204601741342';
+                        channelID = acceptedChannelId;
                         status = 'Accepted';
                     } else if (interaction.customId === 'pendingButton') {
                         embed = new EmbedBuilder()
                             .setTitle('Application Update')
                             .setDescription(`${member.user.toString()}, your application status: Pending`)
                             .setColor('#ffff00')
-                            .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192'); // Replace with your image URL
-                        roleID = '1253347271718735882'; // Replace with your role ID for pending applications
-                        channelID = pendingChannelId; // Channel ID for pending applications
+                            .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192');
+                        roleID = '1253347271718735882';
+                        channelID = pendingChannelId;
                         status = 'Pending';
                     } else if (interaction.customId === 'rejectButton') {
                         embed = new EmbedBuilder()
                             .setTitle('Application Update')
                             .setDescription(`${member.user.toString()}, your application status: Rejected`)
                             .setColor('#ff0000')
-                            .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192'); // Replace with your image URL
-                        roleID = '1254774082445115432'; // Replace with your role ID for rejected applications
-                        channelID = rejectedChannelId; // Channel ID for rejected applications
+                            .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192');
+                        roleID = '1254774082445115432';
+                        channelID = rejectedChannelId;
                         status = 'Rejected';
                     }
 
@@ -246,9 +246,9 @@ client.on('interactionCreate', async (interaction) => {
 
 client.login(token);
 
-// Set up an Express server
+// Express server setup
 app.get('/', (req, res) => {
-    res.send('Hello, this is your Discord bot running.');
+    res.send('Discord bot is running.');
 });
 
 app.listen(port, () => {
