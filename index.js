@@ -1,20 +1,17 @@
-// Import necessary modules
+require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes, REST, TextInputBuilder, ModalBuilder, TextInputStyle } = require('discord.js');
 const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000; // Set the port from environment variables or default to 3000
 
-// Load environment variables
-require('dotenv').config();
 const token = process.env.TOKEN;
 const clientId = process.env.CLIENT_ID;
 const guildId = process.env.GUILD_ID;
 const acceptedChannelId = process.env.ACCEPTED_CHANNEL_ID; // Channel ID for accepted applications
 const pendingChannelId = process.env.PENDING_CHANNEL_ID; // Channel ID for pending applications
 const rejectedChannelId = process.env.REJECTED_CHANNEL_ID; // Channel ID for rejected applications
-const reviewChannelId = process.env.REVIEW_CHANNEL_ID; // Channel ID for review (applications) channel
+const reviewChannelId = process.env.REVIEW_CHANNEL_ID; // Channel ID for review of applications
 
-// Create a new Discord client
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -27,12 +24,12 @@ const client = new Client({
     partials: [Partials.Message, Partials.Channel, Partials.Reaction]
 });
 
-// When the bot is ready, log a message to indicate it
+let applicationChannelId = null;
+
 client.once('ready', () => {
     console.log('Bot is online!');
 });
 
-// Define application slash commands
 const commands = [
     {
         name: 'setapplication',
@@ -44,10 +41,8 @@ const commands = [
     }
 ];
 
-// Set up REST for API requests
 const rest = new REST({ version: '10' }).setToken(token);
 
-// Register slash commands on startup
 (async () => {
     try {
         console.log('Started refreshing application (/) commands.');
@@ -63,54 +58,46 @@ const rest = new REST({ version: '10' }).setToken(token);
     }
 })();
 
-// Handle interactions (slash commands, buttons, modals)
 client.on('interactionCreate', async (interaction) => {
-    if (interaction.isChatInputCommand()) {
-        // Handle slash commands
-        if (interaction.commandName === 'setapplication') {
-            // Set the application channel ID based on where the command was used
-            applicationChannelId = interaction.channel.id;
+    if (!interaction.isCommand() && !interaction.isButton() && !interaction.isModalSubmit()) return;
+
+    if (interaction.isCommand()) {
+        const { commandName } = interaction;
+
+        if (commandName === 'setapplication') {
+            applicationChannelId = interaction.channelId;
             await interaction.reply('This channel has been set for whitelist applications.');
             console.log(`Application channel set to ${applicationChannelId}`);
-        } else if (interaction.commandName === 'postapplication' && applicationChannelId) {
-            // Post the application embed message in the specified application channel
+        } else if (commandName === 'postapplication' && applicationChannelId) {
             await interaction.deferReply({ ephemeral: true });
 
-            // Create embed message for application
             const embed = new EmbedBuilder()
                 .setTitle('Whitelist Application')
                 .setDescription('Click the button below to apply for the whitelist.')
-                .setColor('#00ff00')
-                .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667984b4&is=66783334&hm=0a486fb3dd9f322232f005efc1ebb1ce88e32eef1469278307d11a8c4aef7571&'); // Replace with your image URL
+                .setColor('#00ff00');
 
-            // Create apply button
             const applyButton = new ButtonBuilder()
                 .setCustomId('applyButton')
                 .setLabel('Apply')
                 .setStyle(ButtonStyle.Primary);
 
-            // Create action row with apply button
             const row = new ActionRowBuilder()
                 .addComponents(applyButton);
 
-            // Send embed message with apply button to the application channel
             const channel = client.channels.cache.get(applicationChannelId);
             if (channel) {
                 await channel.send({ embeds: [embed], components: [row] });
-                await interaction.deleteReply(); // Delete the original reply
+                await interaction.deleteReply();
             } else {
                 await interaction.editReply('Application channel is not set.');
             }
         }
     } else if (interaction.isButton()) {
-        // Handle button interactions
         if (interaction.customId === 'applyButton') {
-            // Show modal for whitelist application form
             const modal = new ModalBuilder()
                 .setCustomId('applicationModal')
                 .setTitle('Whitelist Application');
 
-            // Add text input fields for application form
             const characterNameInput = new TextInputBuilder()
                 .setCustomId('characterName')
                 .setLabel('Character Name')
@@ -141,45 +128,40 @@ client.on('interactionCreate', async (interaction) => {
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(true);
 
-            // Add action rows for each input field
             const row1 = new ActionRowBuilder().addComponents(characterNameInput);
             const row2 = new ActionRowBuilder().addComponents(characterGenderInput);
             const row3 = new ActionRowBuilder().addComponents(realNameInput);
             const row4 = new ActionRowBuilder().addComponents(ageInput);
             const row5 = new ActionRowBuilder().addComponents(experienceInput);
 
-            // Add components to the modal
             modal.addComponents(row1, row2, row3, row4, row5);
 
-            // Show the modal for the application form
-            await interaction.showModal(modal);
+            await interaction.reply({ content: 'Please fill out the following information:', components: [modal] });
         } else if (interaction.customId === 'acceptButton' || interaction.customId === 'pendingButton' || interaction.customId === 'rejectButton') {
-            // Handle accept, pending, reject button interactions
-            const userTag = interaction.message.embeds[0].description.split(' ')[2]; // Extract user tag from embed description
-            const member = interaction.guild.members.cache.find(member => member.user.tag === userTag); // Find member by user tag
+            const userTag = interaction.message.embeds[0].description.split(' ')[2];
+            const member = interaction.guild.members.cache.find(member => member.user.tag === userTag);
 
             if (member) {
                 let embed;
                 let roleID;
                 let channelID;
 
-                // Determine action based on button clicked
                 if (interaction.customId === 'acceptButton') {
                     embed = new EmbedBuilder()
                         .setTitle('Application Update')
                         .setDescription('Your application status: Accepted')
                         .setColor('#00ff00')
                         .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667984b4&is=66783334&hm=0a486fb3dd9f322232f005efc1ebb1ce88e32eef1469278307d11a8c4aef7571&'); // Replace with your accept image URL
-                    roleID = '1253347204601741342'; // Replace with your accepted role ID
-                    channelID = acceptedChannelId; // Replace with your accepted applications channel ID
+                    roleID = '1253347204601741342'; // Replace with your role ID for accepted applications
+                    channelID = acceptedChannelId; // Channel ID for accepted applications
                 } else if (interaction.customId === 'pendingButton') {
                     embed = new EmbedBuilder()
                         .setTitle('Application Update')
                         .setDescription('Your application status: Pending')
                         .setColor('#ffff00')
                         .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667984b4&is=66783334&hm=0a486fb3dd9f322232f005efc1ebb1ce88e32eef1469278307d11a8c4aef7571&'); // Replace with your pending image URL
-                    roleID = '1253347271718735882'; // Replace with your pending role ID
-                    channelID = pendingChannelId; // Replace with your pending applications channel ID
+                    roleID = '1253347271718735882'; // Replace with your role ID for pending applications
+                    channelID = pendingChannelId; // Channel ID for pending applications
                 } else if (interaction.customId === 'rejectButton') {
                     embed = new EmbedBuilder()
                         .setTitle('Application Update')
@@ -220,38 +202,52 @@ client.on('interactionCreate', async (interaction) => {
         // Handle modal form submission
         if (interaction.customId === 'applicationModal') {
             // Handle application form submission
-            const characterName = interaction.values.find(v => v.customId === 'characterName').value;
-            const characterGender = interaction.values.find(v => v.customId === 'characterGender').value;
-            const realName = interaction.values.find(v => v.customId === 'realName').value;
-            const age = interaction.values.find(v => v.customId === 'age').value;
-            const experience = interaction.values.find(v => v.customId === 'experience').value;
+            const characterNameInput = interaction.values.find(v => v.customId === 'characterName');
+            const characterGenderInput = interaction.values.find(v => v.customId === 'characterGender');
+            const realNameInput = interaction.values.find(v => v.customId === 'realName');
+            const ageInput = interaction.values.find(v => v.customId === 'age');
+            const experienceInput = interaction.values.find(v => v.customId === 'experience');
 
-            // Example: Save application to database, send to review channel, etc.
-            const reviewChannel = client.channels.cache.get(reviewChannelId);
-            if (reviewChannel) {
-                const reviewEmbed = new EmbedBuilder()
-                    .setTitle('New Whitelist Application')
-                    .addField('Character Name', characterName, true)
-                    .addField('Character Gender', characterGender, true)
-                    .addField('Real Name', realName, true)
-                    .addField('Age', age, true)
-                    .addField('Roleplay Experience', experience)
-                    .setColor('#00ff00');
+            if (characterNameInput && characterGenderInput && realNameInput && ageInput && experienceInput) {
+                const characterName = characterNameInput.value;
+                const characterGender = characterGenderInput.value;
+                const realName = realNameInput.value;
+                const age = ageInput.value;
+                const experience = experienceInput.value;
 
-                await reviewChannel.send({ embeds: [reviewEmbed] });
+                // Example: Save application to database, send to review channel, etc.
+                const reviewChannel = client.channels.cache.get(reviewChannelId);
+                if (reviewChannel) {
+                    const embed = new EmbedBuilder()
+                        .setTitle('New Whitelist Application')
+                        .setDescription(`**Applicant:** ${interaction.user.tag}\n\n**Character Name:** ${characterName}\n**Character Gender:** ${characterGender}\n**Real Name:** ${realName}\n**Age:** ${age}\n**Roleplay Experience:** ${experience}`)
+                        .setColor('#0000ff');
 
-                await interaction.reply('Your application has been submitted for review. We will get back to you soon.');
+                    await reviewChannel.send({ embeds: [embed] });
+
+                    await interaction.reply({
+                        content: 'Thank you for your whitelist application. We\'ll review it and be in touch.',
+                        ephemeral: true
+                    });
+                } else {
+                    console.error('Review channel not found.');
+                    await interaction.reply({ content: 'An error occurred while processing your request.', ephemeral: true });
+                }
             } else {
-                await interaction.reply('Application review channel is not set.');
+                console.error('One or more inputs are missing or undefined.');
+                await interaction.reply({ content: 'There was an issue processing your application. Please try again.', ephemeral: true });
             }
         }
     }
 });
 
-// Log in to Discord with your app's token
-client.login(token);
-
-// Start the Express server
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+// Express server
+app.get('/', (req, res) => {
+    res.send('Bot is running.');
 });
+
+app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+});
+
+client.login(token).catch(console.error);
