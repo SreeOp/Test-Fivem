@@ -13,4 +13,3 @@ module.exports = {
         await interaction.reply({ content: message });
     },
 };
-
