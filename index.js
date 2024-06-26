@@ -1,5 +1,7 @@
 require('dotenv').config();
 const { MongoClient } = require('mongodb');
+const fs = require('fs');
+const path = require('path');
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes, REST, TextInputBuilder, ModalBuilder, TextInputStyle } = require('discord.js');
 const express = require('express');
 const app = express();
@@ -48,16 +50,16 @@ client.once('ready', () => {
     console.log('Bot is online!');
 });
 
-const commands = [
-    {
-        name: 'setapplication',
-        description: 'Set the channel for whitelist applications',
-    },
-    {
-        name: 'postapplication',
-        description: 'Post the application embed message in the application channel',
-    }
-];
+// Initialize commands collection
+client.commands = new Map();
+
+// Dynamically read command files from the commands folder
+const commandFiles = fs.readdirSync(path.join(__dirname, 'commands')).filter(file => file.endsWith('.js'));
+
+for (const file of commandFiles) {
+    const command = require(`./commands/${file}`);
+    client.commands.set(command.data.name, command);
+}
 
 const rest = new REST({ version: '10' }).setToken(token);
 
@@ -67,7 +69,7 @@ const rest = new REST({ version: '10' }).setToken(token);
 
         await rest.put(
             Routes.applicationGuildCommands(clientId, guildId),
-            { body: commands },
+            { body: client.commands.map(command => command.data.toJSON()) },
         );
 
         console.log('Successfully reloaded application (/) commands.');
@@ -78,35 +80,13 @@ const rest = new REST({ version: '10' }).setToken(token);
 
 client.on('interactionCreate', async (interaction) => {
     if (interaction.isChatInputCommand()) {
-        const { commandName } = interaction;
-
-        if (commandName === 'setapplication') {
-            applicationChannelId = interaction.channel.id;
-            await interaction.reply('This channel has been set for whitelist applications.');
-            console.log(`Application channel set to ${applicationChannelId}`);
-        } else if (commandName === 'postapplication' && applicationChannelId) {
-            await interaction.deferReply({ ephemeral: true });
-
-            const embed = new EmbedBuilder()
-                .setTitle('Whitelist Application')
-                .setDescription('Click the button below to apply for the whitelist.')
-                .setColor('#00ff00')
-                .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667984b4&is=66783334&hm=0a486fb3dd9f322232f005efc1ebb1ce88e32eef1469278307d11a8c4aef7571&');
-
-            const applyButton = new ButtonBuilder()
-                .setCustomId('applyButton')
-                .setLabel('Apply')
-                .setStyle(ButtonStyle.Primary);
-                
-            const row = new ActionRowBuilder()
-                .addComponents(applyButton);
-
-            const channel = client.channels.cache.get(applicationChannelId);
-            if (channel) {
-                await channel.send({ embeds: [embed], components: [row] });
-                await interaction.deleteReply();
-            } else {
-                await interaction.editReply('Application channel is not set.');
+        const command = client.commands.get(interaction.commandName);
+        if (command) {
+            try {
+                await command.execute(interaction);
+            } catch (error) {
+                console.error(error);
+                await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
             }
         }
     } else if (interaction.isButton()) {
@@ -208,15 +188,16 @@ client.on('interactionCreate', async (interaction) => {
 
             const embed = new EmbedBuilder()
                 .setTitle('New Whitelist Application')
-                .setDescription(`Submitted by: ${interaction.user.tag}`)
+                .setDescription(`Application from ${interaction.user.tag}`)
+                .setColor('#00ff00')
                 .addFields(
-                    { name: 'Character Name', value: characterName, inline: true },
-                    { name: 'Character Gender', value: characterGender, inline: true },
-                    { name: 'Real Name', value: realName, inline: true },
-                    { name: 'Age', value: age, inline: true },
-                    { name: 'Roleplay Experience', value: experience, inline: true }
+                    { name: 'Character Name', value: characterName },
+                    { name: 'Character Gender', value: characterGender },
+                    { name: 'Real Name', value: realName },
+                    { name: 'Age', value: age },
+                    { name: 'Experience', value: experience }
                 )
-                .setColor('#00ff00');
+                .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192'); // Replace with your image URL
 
             const acceptButton = new ButtonBuilder()
                 .setCustomId('acceptButton')
@@ -233,37 +214,27 @@ client.on('interactionCreate', async (interaction) => {
                 .setLabel('Reject')
                 .setStyle(ButtonStyle.Danger);
 
-            const row = new ActionRowBuilder()
-                .addComponents(acceptButton, pendingButton, rejectButton);
+            const row = new ActionRowBuilder().addComponents(acceptButton, pendingButton, rejectButton);
 
-            const channel = client.channels.cache.get(applicationReviewChannelId);
-            if (channel) {
-                await channel.send({ content: `<@${interaction.user.id}>`, embeds: [embed], components: [row] }); // Mention the user in the review channel
+            const applicationReviewChannel = client.channels.cache.get(applicationReviewChannelId);
+            if (applicationReviewChannel) {
+                await applicationReviewChannel.send({ embeds: [embed], components: [row] });
             }
 
-            await interaction.reply({ content: 'Application submitted successfully!', ephemeral: true });
-
-            const applicationsCollection = db.collection('applications');
-            await applicationsCollection.insertOne({
-                discordTag: interaction.user.tag,
+            const collection = db.collection('applications');
+            await collection.insertOne({
+                userId: interaction.user.id,
                 characterName,
                 characterGender,
                 realName,
                 age,
                 experience,
-                status: 'Pending',
-                timestamp: new Date()
+                status: 'pending'
             });
+
+            await interaction.reply({ content: 'Your application has been submitted successfully!', ephemeral: true });
         }
     }
 });
 
 client.login(token);
-
-app.get('/', (req, res) => {
-    res.send('Hello, this is your Discord bot running.');
-});
-
-app.listen(port, () => {
-    console.log(`Express server listening on port ${port}`);
-});
