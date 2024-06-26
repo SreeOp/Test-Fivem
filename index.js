@@ -2,7 +2,7 @@ require('dotenv').config();
 const { MongoClient } = require('mongodb');
 const fs = require('fs');
 const path = require('path');
-const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes, REST, TextInputBuilder, ModalBuilder, TextInputStyle } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes, REST, TextInputBuilder, ModalBuilder, TextInputStyle, Collection } = require('discord.js');
 const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
@@ -51,7 +51,7 @@ client.once('ready', () => {
 });
 
 // Initialize commands collection
-client.commands = new Map();
+client.commands = new Collection();
 
 // Dynamically read command files from the commands folder
 const commandFiles = fs.readdirSync(path.join(__dirname, 'commands')).filter(file => file.endsWith('.js'));
@@ -238,3 +238,12 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.login(token);
+
+// Health check endpoint
+app.get('/', (req, res) => {
+    res.send('Bot is running!');
+});
+
+app.listen(port, () => {
+    console.log(`Server is running at http://localhost:${port}`);
+});
