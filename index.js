@@ -1,15 +1,16 @@
 require('dotenv').config();
+const { MongoClient } = require('mongodb');
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes, REST, TextInputBuilder, ModalBuilder, TextInputStyle } = require('discord.js');
 const express = require('express');
 const app = express();
-const port = process.env.PORT || 3000; // Set the port from environment variables or default to 3000
+const port = process.env.PORT || 3000;
 
 const token = process.env.TOKEN;
 const clientId = process.env.CLIENT_ID;
 const guildId = process.env.GUILD_ID;
-const acceptedChannelId = process.env.ACCEPTED_CHANNEL_ID; // Channel ID for accepted applications
-const pendingChannelId = process.env.PENDING_CHANNEL_ID; // Channel ID for pending applications
-const rejectedChannelId = process.env.REJECTED_CHANNEL_ID; // Channel ID for rejected applications
+const acceptedChannelId = process.env.ACCEPTED_CHANNEL_ID;
+const pendingChannelId = process.env.PENDING_CHANNEL_ID;
+const rejectedChannelId = process.env.REJECTED_CHANNEL_ID;
 
 const applicationReviewChannelId = '1255162116126539786'; // Set your review channel ID here
 
@@ -26,6 +27,22 @@ const client = new Client({
 });
 
 let applicationChannelId = null;
+
+const mongoClient = new MongoClient(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+});
+
+let db;
+
+mongoClient.connect(err => {
+    if (err) {
+        console.error('Failed to connect to MongoDB:', err);
+        process.exit(1);
+    }
+    db = mongoClient.db('discordBotDB'); // Replace with your database name
+    console.log('Connected to MongoDB');
+});
 
 client.once('ready', () => {
     console.log('Bot is online!');
@@ -225,13 +242,24 @@ client.on('interactionCreate', async (interaction) => {
             }
 
             await interaction.reply({ content: 'Application submitted successfully!', ephemeral: true });
+
+            const applicationsCollection = db.collection('applications');
+            await applicationsCollection.insertOne({
+                discordTag: interaction.user.tag,
+                characterName,
+                characterGender,
+                realName,
+                age,
+                experience,
+                status: 'Pending',
+                timestamp: new Date()
+            });
         }
     }
 });
 
 client.login(token);
 
-// Set up an Express server
 app.get('/', (req, res) => {
     res.send('Hello, this is your Discord bot running.');
 });
