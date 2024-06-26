@@ -78,7 +78,8 @@ client.on('interactionCreate', async (interaction) => {
             const applyButton = new ButtonBuilder()
                 .setCustomId('applyButton')
                 .setLabel('Apply')
-                .setStyle(ButtonStyle.Primary);
+                .setStyle(ButtonStyle.Primary)
+                .setImage(https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667984b4&is=66783334&hm=0a486fb3dd9f322232f005efc1ebb1ce88e32eef1469278307d11a8c4aef7571&);
 
             const row = new ActionRowBuilder()
                 .addComponents(applyButton);
@@ -137,21 +138,48 @@ client.on('interactionCreate', async (interaction) => {
 
             await interaction.showModal(modal);
         } else if (interaction.customId === 'acceptButton' || interaction.customId === 'pendingButton' || interaction.customId === 'rejectButton') {
-            const modal = new ModalBuilder()
-                .setCustomId('reasonModal')
-                .setTitle('Provide a Reason');
+            const userTag = interaction.message.embeds[0].description.split(' ')[2];
+            const member = interaction.guild.members.cache.find(member => member.user.tag === userTag);
 
-            const reasonInput = new TextInputBuilder()
-                .setCustomId('reasonInput')
-                .setLabel('Reason')
-                .setStyle(TextInputStyle.Paragraph)
-                .setRequired(true);
+            if (member) {
+                let embed;
+                let roleID;
+                let channelID;
 
-            const row = new ActionRowBuilder().addComponents(reasonInput);
+                if (interaction.customId === 'acceptButton') {
+                    embed = new EmbedBuilder()
+                        .setTitle('Application Update')
+                        .setDescription('Your application status: Accepted')
+                        .setColor('#00ff00')
+                        .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192'); // Replace with your image URL
+                    roleID = '1253347204601741342'; // Replace with your role ID for accepted applications
+                    channelID = acceptedChannelId; // Channel ID for accepted applications
+                } else if (interaction.customId === 'pendingButton') {
+                    embed = new EmbedBuilder()
+                        .setTitle('Application Update')
+                        .setDescription('Your application status: Pending')
+                        .setColor('#ffff00')
+                        .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192'); // Replace with your image URL
+                    roleID = '1253347271718735882'; // Replace with your role ID for pending applications
+                    channelID = pendingChannelId; // Channel ID for pending applications
+                } else if (interaction.customId === 'rejectButton') {
+                    embed = new EmbedBuilder()
+                        .setTitle('Application Update')
+                        .setDescription('Your application status: Rejected')
+                        .setColor('#ff0000')
+                        .setImage('https://media.discordapp.net/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667ad634&is=667984b4&hm=7cd86a2366c7c0b217ab3b83a21ad954c504a977f1fdc0d959912e0ef2346d90&=&format=webp&quality=lossless&width=544&height=192'); // Replace with your image URL
+                    roleID = '1254774082445115432'; // Replace with your role ID for rejected applications
+                    channelID = rejectedChannelId; // Channel ID for rejected applications
+                }
 
-            modal.addComponents(row);
+                await member.roles.add(roleID);
+                await member.send({ embeds: [embed] });
 
-            await interaction.showModal(modal);
+                const channel = client.channels.cache.get(channelID);
+                if (channel) {
+                    await channel.send({ content: `<@${member.user.id}>`, embeds: [embed] }); // Mention the user in the channel
+                }
+            }
         }
     } else if (interaction.isModalSubmit()) {
         if (interaction.customId === 'applicationModal') {
@@ -171,9 +199,7 @@ client.on('interactionCreate', async (interaction) => {
                     { name: 'Age', value: age, inline: true },
                     { name: 'Roleplay Experience', value: experience, inline: true }
                 )
-                .setColor('#00ff00')
-                .setTimestamp() // Add timestamp to the embed
-                .setFooter({ text: `Submitted ${Math.floor(Date.now() / 1000)} seconds ago` }); // Use Discord relative time format
+                .setColor('#00ff00');
 
             const acceptButton = new ButtonBuilder()
                 .setCustomId('acceptButton')
@@ -199,54 +225,6 @@ client.on('interactionCreate', async (interaction) => {
             }
 
             await interaction.reply({ content: 'Application submitted successfully!', ephemeral: true });
-        } else if (interaction.customId === 'reasonModal') {
-            const reason = interaction.fields.getTextInputValue('reasonInput');
-            const embed = interaction.message.embeds[0];
-            const userTag = embed.description.split(' ')[2];
-            const member = interaction.guild.members.cache.find(member => member.user.tag === userTag);
-            const customId = interaction.message.components[0].components.find(button => button.customId.includes('Button')).customId;
-
-            if (member) {
-                let statusEmbed;
-                let roleID;
-                let channelID;
-                let status;
-
-                if (customId === 'acceptButton') {
-                    status = 'Accepted';
-                    statusEmbed = new EmbedBuilder()
-                        .setTitle('Application Update')
-                        .setDescription(`Your application status: **${status}**\nReason: ${reason}`)
-                        .setColor('#00ff00');
-                    roleID = 'YOUR_ACCEPTED_ROLE_ID'; // Replace with your role ID for accepted applications
-                    channelID = acceptedChannelId; // Channel ID for accepted applications
-                } else if (customId === 'pendingButton') {
-                    status = 'Pending';
-                    statusEmbed = new EmbedBuilder()
-                        .setTitle('Application Update')
-                        .setDescription(`Your application status: **${status}**\nReason: ${reason}`)
-                        .setColor('#ffff00');
-                    roleID = 'YOUR_PENDING_ROLE_ID'; // Replace with your role ID for pending applications
-                    channelID = pendingChannelId; // Channel ID for pending applications
-                } else if (customId === 'rejectButton') {
-                    status = 'Rejected';
-                    statusEmbed = new EmbedBuilder()
-                        .setTitle('Application Update')
-                        .setDescription(`Your application status: **${status}**\nReason: ${reason}`)
-                        .setColor('#ff0000');
-                    roleID = 'YOUR_REJECTED_ROLE_ID'; // Replace with your role ID for rejected applications
-                    channelID = rejectedChannelId; // Channel ID for rejected applications
-                }
-
-                await member.send({ embeds: [statusEmbed] });
-
-                const statusChannel = client.channels.cache.get(channelID);
-                if (statusChannel) {
-                    await statusChannel.send({ content: `<@${member.id}>`, embeds: [statusEmbed] });
-                }
-            }
-
-            await interaction.update({ content: `Application ${status}.`, components: [] });
         }
     }
 });
