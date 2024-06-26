@@ -73,14 +73,14 @@ client.on('interactionCreate', async (interaction) => {
             const embed = new EmbedBuilder()
                 .setTitle('Whitelist Application')
                 .setDescription('Click the button below to apply for the whitelist.')
-                .setColor('#00ff00');
+                .setColor('#00ff00')
+                .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667984b4&is=66783334&hm=0a486fb3dd9f322232f005efc1ebb1ce88e32eef1469278307d11a8c4aef7571&');
 
             const applyButton = new ButtonBuilder()
                 .setCustomId('applyButton')
                 .setLabel('Apply')
-                .setStyle(ButtonStyle.Primary)
-                .setImage('https://cdn.discordapp.com/attachments/1056903195961610275/1254445277759148172/096ff227-e675-4307-a969-e2aac7a4c7ba-2.png?ex=667984b4&is=66783334&hm=0a486fb3dd9f322232f005efc1ebb1ce88e32eef1469278307d11a8c4aef7571&');
-
+                .setStyle(ButtonStyle.Primary);
+                
             const row = new ActionRowBuilder()
                 .addComponents(applyButton);
 
